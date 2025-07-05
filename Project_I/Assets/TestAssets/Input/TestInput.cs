@@ -55,6 +55,15 @@ namespace Test
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""MainFire"",
+                    ""type"": ""Button"",
+                    ""id"": ""db91c4b5-82e8-4cf8-844b-b64fbaa02d5f"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -90,6 +99,17 @@ namespace Test
                     ""action"": ""Boost"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""29a5d891-6925-42a2-be89-22eb7767e5a9"",
+                    ""path"": ""<Mouse>/leftButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""MainFire"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -101,6 +121,7 @@ namespace Test
             m_Player_MousePos = m_Player.FindAction("MousePos", throwIfNotFound: true);
             m_Player_ThrustAug = m_Player.FindAction("ThrustAug", throwIfNotFound: true);
             m_Player_Boost = m_Player.FindAction("Boost", throwIfNotFound: true);
+            m_Player_MainFire = m_Player.FindAction("MainFire", throwIfNotFound: true);
         }
 
         ~@TestInput()
@@ -170,6 +191,7 @@ namespace Test
         private readonly InputAction m_Player_MousePos;
         private readonly InputAction m_Player_ThrustAug;
         private readonly InputAction m_Player_Boost;
+        private readonly InputAction m_Player_MainFire;
         public struct PlayerActions
         {
             private @TestInput m_Wrapper;
@@ -177,6 +199,7 @@ namespace Test
             public InputAction @MousePos => m_Wrapper.m_Player_MousePos;
             public InputAction @ThrustAug => m_Wrapper.m_Player_ThrustAug;
             public InputAction @Boost => m_Wrapper.m_Player_Boost;
+            public InputAction @MainFire => m_Wrapper.m_Player_MainFire;
             public InputActionMap Get() { return m_Wrapper.m_Player; }
             public void Enable() { Get().Enable(); }
             public void Disable() { Get().Disable(); }
@@ -195,6 +218,9 @@ namespace Test
                 @Boost.started += instance.OnBoost;
                 @Boost.performed += instance.OnBoost;
                 @Boost.canceled += instance.OnBoost;
+                @MainFire.started += instance.OnMainFire;
+                @MainFire.performed += instance.OnMainFire;
+                @MainFire.canceled += instance.OnMainFire;
             }
 
             private void UnregisterCallbacks(IPlayerActions instance)
@@ -208,6 +234,9 @@ namespace Test
                 @Boost.started -= instance.OnBoost;
                 @Boost.performed -= instance.OnBoost;
                 @Boost.canceled -= instance.OnBoost;
+                @MainFire.started -= instance.OnMainFire;
+                @MainFire.performed -= instance.OnMainFire;
+                @MainFire.canceled -= instance.OnMainFire;
             }
 
             public void RemoveCallbacks(IPlayerActions instance)
@@ -230,6 +259,7 @@ namespace Test
             void OnMousePos(InputAction.CallbackContext context);
             void OnThrustAug(InputAction.CallbackContext context);
             void OnBoost(InputAction.CallbackContext context);
+            void OnMainFire(InputAction.CallbackContext context);
         }
     }
 }

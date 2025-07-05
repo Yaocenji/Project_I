@@ -38,6 +38,10 @@ namespace Test
         
         // 输入系统
         private TestInput _testInput;
+        
+        // 武器发射器
+        private BulletEjector _bulletEjector;
+        
         // 鼠标世界空间
         private Vector2 _mousePositionWs;
         // 刚体
@@ -64,6 +68,7 @@ namespace Test
         private Vector2 gravityF;
 
         private float tailWing; // 尾翼位置，[-1,1]
+        private float tailWingAngle;// 尾翼角度，[-π/4,π/4]
         
         void Awake()
         {
@@ -77,10 +82,15 @@ namespace Test
             // 加力按住事件
             _testInput.Player.ThrustAug.started += OnThrustAugStarting;
             _testInput.Player.ThrustAug.canceled += OnThrustAugCancelling;
+            // 左键打枪
+            _testInput.Player.MainFire.started += OnMainFire;
+            _testInput.Player.MainFire.canceled += OnMainFireEnd;
         }
 
         private void Start()
         {
+            _bulletEjector = GetComponent<BulletEjector>();
+            
             _rigidbody2D = GetComponent<Rigidbody2D>();
             _rigidbody2D.velocity = transform.right * iniVel;
 
@@ -100,6 +110,7 @@ namespace Test
             gravityF = Vector2.down * _gravity;
 
             tailWing = 0;
+            tailWingAngle = 0;
         }
 
         // Update is called once per frame
@@ -115,6 +126,11 @@ namespace Test
             liftF = Lift();
             fricF = Fric();
             rotatF = Rotat();
+            
+            if (float.IsNaN(engineF.x) || float.IsNaN(engineF.y)) engineF = Vector2.zero;
+            if (float.IsNaN(liftF.x)   || float.IsNaN(liftF.y))   liftF = Vector2.zero;
+            if (float.IsNaN(fricF.x)   || float.IsNaN(fricF.y))   fricF = Vector2.zero;
+            if (float.IsNaN(rotatF.x)  || float.IsNaN(rotatF.y))  rotatF = Vector2.zero;
             
             // 质心力（平动力）
             Vector2 centricResultForce = Vector2.zero;
@@ -152,13 +168,19 @@ namespace Test
             // 机头倾斜角影响 竖直飞时减小升力
             float cosElevAngle = Mathf.Abs(Vector2.Dot(transform.right, Vector2.right));
             cosElevAngle *= 1.25f;
-            angleCoef *= Mathf.Lerp(0.35f, 1.0f, cosElevAngle);
+            angleCoef *= Mathf.Lerp(0.75f, 1.0f, cosElevAngle);
             
             // 攻角影响 攻角越接近90度，升力越小
             float cosAOA = Mathf.Sqrt(1 - sinAOA * sinAOA);
-            angleCoef *= Mathf.Abs(cosAOA);
+            angleCoef *= (Mathf.Abs(cosAOA) * 0.25f + 0.75f);
+            
+            // 引擎系数：开启引擎推进时升力更大：
+            float boostCoef = useBoost ? 2 : .5f;
 
-            return _gravity * Vector2.up * liftCoef * angleCoef;
+            float ansCoef = liftCoef * angleCoef * boostCoef;
+            if (ansCoef >= 1) ansCoef = 1;
+
+            return _gravity * Vector2.up * ansCoef;
         }
         
         // 空气阻力
@@ -192,14 +214,14 @@ namespace Test
             float deltaAngle = dot >= 0 ? Mathf.Asin(cross.z) : ( cross.z >= 0 ? Mathf.PI - Mathf.Asin(cross.z) : - Mathf.PI - Mathf.Asin(cross.z) );
 
             // 计算目标的tailWing
-            float targetTailWing = -(deltaAngle - 0.02f * _rigidbody2D.angularVelocity / Mathf.PI);
+            float targetTailWing = -(deltaAngle - Time.fixedDeltaTime * 2 * _rigidbody2D.angularVelocity / Mathf.PI);
 
-            if (targetTailWing > tailWing)
+            /*if (targetTailWing > tailWing)
                 tailWing += targetTailWing - tailWing >= .3f ? .3f : targetTailWing - tailWing;
             else if (targetTailWing < tailWing)
-                tailWing -= tailWing - targetTailWing>= .3f ? .3f : tailWing - targetTailWing;
+                tailWing -= tailWing - targetTailWing>= .3f ? .3f : tailWing - targetTailWing;*/
 
-            //tailWing = targetTailWing;
+            tailWing = targetTailWing;
 
             // 力臂长度
             tailWing *= 1.0f;
@@ -210,16 +232,24 @@ namespace Test
             /*if (tailWing >= 10.0f) tailWing = 10.0f;
             if (tailWing <= -10.0f) tailWing = -10.0f;*/
 
-            //return Vector2.zero;
+            // 计算水平尾翼偏转角
+            tailWingAngle = -deltaAngle;
+            
             return rearControl.up * tailWing;
         }
         
         // 计算升力系数
         private float LiftCoef(float threshold)
         {
-            if (speed >= threshold) return 1.0f;
+            float liftCoef = 1;
 
-            return 1 - Mathf.Pow(1 - speed / threshold, 3.0f);
+            if (speed < threshold)
+            {
+                liftCoef *= 1 - Mathf.Pow(1 - speed / threshold, 3.0f);
+                liftCoef = liftCoef * 0.25f + 0.75f;
+            }
+
+            return liftCoef;
         }
 
         // 计算回转速度系数
@@ -236,7 +266,6 @@ namespace Test
             sinAOA = Vector3.Cross(transform.right, mouseDir).z;
             speed = _rigidbody2D.velocity.magnitude;
             
-            Debug.Log(speed);
         }
 
         private void OnDrawGizmos()
@@ -291,6 +320,20 @@ namespace Test
         {
             useThrustAug = false;
             fireTemp1.enabled = false;
+        }
+        
+        // 子弹发射
+        private void OnMainFire(InputAction.CallbackContext context)
+        {
+            _bulletEjector.BeginEject();
+        }
+        private void OnMainFireEnd(InputAction.CallbackContext context)
+        {
+            _bulletEjector.EndEject();
+        }
+
+        private void OnTriggerEnter2D(Collider2D other)
+        {
         }
     }
 }
