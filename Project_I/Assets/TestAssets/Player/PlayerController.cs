@@ -206,12 +206,18 @@ namespace Test
         private Vector2 Rotat()
         {
             Vector2 mouseDir = (_mousePositionWs - (Vector2)transform.position).normalized;
+
+            float targetAngle = mouseDir.y >= 0 ? Mathf.Acos(mouseDir.x) : -Mathf.Acos(mouseDir.x);
+            Debug.Log(targetAngle);
+            
+            _rigidbody2D.MoveRotation(Quaternion.Euler(0, 0, targetAngle / Mathf.PI * 180.0F));
             
             Vector3 cross = Vector3.Cross(transform.right, mouseDir);
             float dot = Vector2.Dot(transform.right, mouseDir);
             
             // 计算要变化的弧度（逆正顺负）
             float deltaAngle = dot >= 0 ? Mathf.Asin(cross.z) : ( cross.z >= 0 ? Mathf.PI - Mathf.Asin(cross.z) : - Mathf.PI - Mathf.Asin(cross.z) );
+            
 
             // 计算目标的tailWing
             float targetTailWing = -(deltaAngle - Time.fixedDeltaTime * 2 * _rigidbody2D.angularVelocity / Mathf.PI);
@@ -235,7 +241,8 @@ namespace Test
             // 计算水平尾翼偏转角
             tailWingAngle = -deltaAngle;
             
-            return rearControl.up * tailWing;
+            //return rearControl.up * tailWing;
+            return Vector2.zero;
         }
         
         // 计算升力系数

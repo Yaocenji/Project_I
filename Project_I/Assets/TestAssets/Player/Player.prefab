@@ -60,7 +60,7 @@ MonoBehaviour:
   SlowThrustByWeight: 0.3
   BoostThrustByWeight: 1.5
   ThrustAugThrustByWeight: 3
-  MinRotationRatio: 2
+  MinRotationRatio: 4
   MaxRotationRatio: 4
   MaxRotSpeed: 10
   WindDragFric: 2

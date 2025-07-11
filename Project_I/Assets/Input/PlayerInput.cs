@@ -15,7 +15,7 @@ using System.Collections.Generic;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Utilities;
 
-namespace Priject_I
+namespace Project_I
 {
     public partial class @PlayerInput: IInputActionCollection2, IDisposable
     {
@@ -24,13 +24,109 @@ namespace Priject_I
         {
             asset = InputActionAsset.FromJson(@"{
     ""name"": ""PlayerInput"",
-    ""maps"": [],
+    ""maps"": [
+        {
+            ""name"": ""Player"",
+            ""id"": ""3957f7c6-5da8-4926-97c0-ede4ac0df16a"",
+            ""actions"": [
+                {
+                    ""name"": ""MousePosition"",
+                    ""type"": ""PassThrough"",
+                    ""id"": ""a3a1fffd-6838-43e7-91de-90d9554b37ba"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""StandardThrust"",
+                    ""type"": ""Button"",
+                    ""id"": ""83a6fa64-1065-43c1-a7b6-df8ee6a58317"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""AugmentationThrust"",
+                    ""type"": ""Button"",
+                    ""id"": ""b61fc9eb-d485-4714-b323-ec614d15dc73"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""MainAttack"",
+                    ""type"": ""Button"",
+                    ""id"": ""c618bb4e-bd9b-41d2-b877-c7a0a13ddd63"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""a3225723-167c-41ab-ba30-15962a09dc5b"",
+                    ""path"": ""<Mouse>/position"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""MousePosition"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""5a20f161-f64d-48ca-9356-d8da1910f9f4"",
+                    ""path"": ""<Keyboard>/space"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""StandardThrust"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""8e5ee0f6-1890-4f86-9442-ebee051ff3a5"",
+                    ""path"": ""<Keyboard>/leftShift"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""AugmentationThrust"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""3a39412a-5cb0-48b5-8daa-a50bbd979788"",
+                    ""path"": ""<Mouse>/leftButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""MainAttack"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
+        }
+    ],
     ""controlSchemes"": []
 }");
+            // Player
+            m_Player = asset.FindActionMap("Player", throwIfNotFound: true);
+            m_Player_MousePosition = m_Player.FindAction("MousePosition", throwIfNotFound: true);
+            m_Player_StandardThrust = m_Player.FindAction("StandardThrust", throwIfNotFound: true);
+            m_Player_AugmentationThrust = m_Player.FindAction("AugmentationThrust", throwIfNotFound: true);
+            m_Player_MainAttack = m_Player.FindAction("MainAttack", throwIfNotFound: true);
         }
 
         ~@PlayerInput()
         {
+            UnityEngine.Debug.Assert(!m_Player.enabled, "This will cause a leak and performance issues, PlayerInput.Player.Disable() has not been called.");
         }
 
         public void Dispose()
@@ -87,6 +183,83 @@ namespace Priject_I
         public int FindBinding(InputBinding bindingMask, out InputAction action)
         {
             return asset.FindBinding(bindingMask, out action);
+        }
+
+        // Player
+        private readonly InputActionMap m_Player;
+        private List<IPlayerActions> m_PlayerActionsCallbackInterfaces = new List<IPlayerActions>();
+        private readonly InputAction m_Player_MousePosition;
+        private readonly InputAction m_Player_StandardThrust;
+        private readonly InputAction m_Player_AugmentationThrust;
+        private readonly InputAction m_Player_MainAttack;
+        public struct PlayerActions
+        {
+            private @PlayerInput m_Wrapper;
+            public PlayerActions(@PlayerInput wrapper) { m_Wrapper = wrapper; }
+            public InputAction @MousePosition => m_Wrapper.m_Player_MousePosition;
+            public InputAction @StandardThrust => m_Wrapper.m_Player_StandardThrust;
+            public InputAction @AugmentationThrust => m_Wrapper.m_Player_AugmentationThrust;
+            public InputAction @MainAttack => m_Wrapper.m_Player_MainAttack;
+            public InputActionMap Get() { return m_Wrapper.m_Player; }
+            public void Enable() { Get().Enable(); }
+            public void Disable() { Get().Disable(); }
+            public bool enabled => Get().enabled;
+            public static implicit operator InputActionMap(PlayerActions set) { return set.Get(); }
+            public void AddCallbacks(IPlayerActions instance)
+            {
+                if (instance == null || m_Wrapper.m_PlayerActionsCallbackInterfaces.Contains(instance)) return;
+                m_Wrapper.m_PlayerActionsCallbackInterfaces.Add(instance);
+                @MousePosition.started += instance.OnMousePosition;
+                @MousePosition.performed += instance.OnMousePosition;
+                @MousePosition.canceled += instance.OnMousePosition;
+                @StandardThrust.started += instance.OnStandardThrust;
+                @StandardThrust.performed += instance.OnStandardThrust;
+                @StandardThrust.canceled += instance.OnStandardThrust;
+                @AugmentationThrust.started += instance.OnAugmentationThrust;
+                @AugmentationThrust.performed += instance.OnAugmentationThrust;
+                @AugmentationThrust.canceled += instance.OnAugmentationThrust;
+                @MainAttack.started += instance.OnMainAttack;
+                @MainAttack.performed += instance.OnMainAttack;
+                @MainAttack.canceled += instance.OnMainAttack;
+            }
+
+            private void UnregisterCallbacks(IPlayerActions instance)
+            {
+                @MousePosition.started -= instance.OnMousePosition;
+                @MousePosition.performed -= instance.OnMousePosition;
+                @MousePosition.canceled -= instance.OnMousePosition;
+                @StandardThrust.started -= instance.OnStandardThrust;
+                @StandardThrust.performed -= instance.OnStandardThrust;
+                @StandardThrust.canceled -= instance.OnStandardThrust;
+                @AugmentationThrust.started -= instance.OnAugmentationThrust;
+                @AugmentationThrust.performed -= instance.OnAugmentationThrust;
+                @AugmentationThrust.canceled -= instance.OnAugmentationThrust;
+                @MainAttack.started -= instance.OnMainAttack;
+                @MainAttack.performed -= instance.OnMainAttack;
+                @MainAttack.canceled -= instance.OnMainAttack;
+            }
+
+            public void RemoveCallbacks(IPlayerActions instance)
+            {
+                if (m_Wrapper.m_PlayerActionsCallbackInterfaces.Remove(instance))
+                    UnregisterCallbacks(instance);
+            }
+
+            public void SetCallbacks(IPlayerActions instance)
+            {
+                foreach (var item in m_Wrapper.m_PlayerActionsCallbackInterfaces)
+                    UnregisterCallbacks(item);
+                m_Wrapper.m_PlayerActionsCallbackInterfaces.Clear();
+                AddCallbacks(instance);
+            }
+        }
+        public PlayerActions @Player => new PlayerActions(this);
+        public interface IPlayerActions
+        {
+            void OnMousePosition(InputAction.CallbackContext context);
+            void OnStandardThrust(InputAction.CallbackContext context);
+            void OnAugmentationThrust(InputAction.CallbackContext context);
+            void OnMainAttack(InputAction.CallbackContext context);
         }
     }
 }
