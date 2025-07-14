@@ -18,7 +18,7 @@ public class AircraftController : MonoBehaviour
     // 飞机参数
     
     [Header("慢车出力")]
-    public float engineF_0 = 5.0f;
+    public float engineF_0 = 1.0f;
     [Header("满车出力")]
     public float engineF_1 = 15.5f;
     [Header("加力出力")]
@@ -27,10 +27,10 @@ public class AircraftController : MonoBehaviour
     [Header("飞机质量")]
     public float mass = 1.0f;
     
-    [Header("最小回转角速度")]
-    public float minRotateRatio = 60f;
-    [Header("最大回转角速度")]
-    public float maxRotateRatio = 150f;
+    [Header("最小回转角速度（°/s）")]
+    public float minRotateRatio = 20f;
+    [Header("最大回转角速度（°/s）")]
+    public float maxRotateRatio = 75f;
     
     [Header("最佳回转速度起点")]
     public float minBestRotateSpeed = 5.0f;
@@ -39,8 +39,12 @@ public class AircraftController : MonoBehaviour
     [Header("锁舵速度")]
     public float rudderLockSpeed = 40.0f;
 
-    [Header("舵从中立位到最大位的所需的时间")]
-    public float rudderAgility = 0.3f;
+    [Header("水平安定力")]
+    public float horizonalStability = 0.035f;
+    [Header("存能系数")]
+    public float energyRetention = 0.5f;
+    [Header("到达最大翼面效应的速度")]
+    public float maxWingStablilitySpeed = 7.5f;
     
     // 是否使用推进
     private bool useStandardThrust;
@@ -60,6 +64,14 @@ public class AircraftController : MonoBehaviour
     private Vector2 velocity;
     private float speed;
     private float angularVelocity;
+
+    public Vector2 getVelocity
+    {
+        get
+        {
+            return velocity;
+        }
+    }
     
     void Awake()
     {
@@ -93,7 +105,7 @@ public class AircraftController : MonoBehaviour
                 engineF = engineF_2 * transform.right;
             // 升力
             if (!useStandardThrust)
-                liftF = -gravityF * 0.5f;
+                liftF = -gravityF * 0.25f;
             else
                 liftF = -gravityF;
             // 阻力
@@ -127,9 +139,18 @@ public class AircraftController : MonoBehaviour
             {
                 currMaxAngularVelocity = 0;
             }
+            
+            // 负反馈控制（这里是魔法数）
+            angularVelocity = (deltaAngle / Mathf.PI * 180.0f) * 0.5f;
+            
+            if (Mathf.Abs(angularVelocity) <= 0.05f)
+                angularVelocity = 0.05f * Mathf.Sign(deltaAngle);
+            if (Mathf.Abs(angularVelocity) >= currMaxAngularVelocity * fixedFrameTime)
+                angularVelocity = Mathf.Sign(angularVelocity) * currMaxAngularVelocity * fixedFrameTime;
 
-            //float ans = (deltaAngle + Mathf.Sign(deltaAngle) * currMaxAngularVelocity * fixedFrameTime) / 2;
-            transform.rotation = Quaternion.Euler(0, 0, transform.rotation.eulerAngles.z + (deltaAngle / Mathf.PI * 180.0f) * 0.05f + 0.02f);
+            angularVelocity += 0.2f;
+
+            transform.rotation = Quaternion.Euler(0, 0, transform.rotation.eulerAngles.z + angularVelocity);
             //transform.rotation = Quaternion.Euler(0, 0, transform.rotation.eulerAngles.z + Mathf.Sign(deltaAngle) * currMaxAngularVelocity * fixedFrameTime);
         }
         
@@ -139,8 +160,11 @@ public class AircraftController : MonoBehaviour
             Vector2 parallelVelocity = Vector2.Dot(velocity, transform.right) / Vector2.Dot(transform.right, transform.right) 
                                        * (Vector2)transform.right;
             Vector2 verticalVelocity = velocity - parallelVelocity;
-
-            velocity = (parallelVelocity + verticalVelocity.magnitude * 0.05f * parallelVelocity.normalized) + verticalVelocity * 0.95f;
+            // 计算当前水平安定系数
+            float currStb = speed >= maxWingStablilitySpeed
+                ? horizonalStability
+                : Mathf.Lerp(0, horizonalStability, speed / maxWingStablilitySpeed);
+            velocity = (parallelVelocity + verticalVelocity.magnitude * currStb * energyRetention * parallelVelocity.normalized) + verticalVelocity * (1 - currStb);
         }
 
         // 物理计算启动
@@ -154,6 +178,8 @@ public class AircraftController : MonoBehaviour
             // 计算物理量
             speed = velocity.magnitude;
         }
+        
+        //Debug.Log(speed);
     }
 
     public void SetTargetPosition(Vector2 tar)

@@ -1,7 +1,9 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
 
 
 namespace Project_I
@@ -9,10 +11,10 @@ namespace Project_I
 public class PlayerController : MonoBehaviour
 {
     public Camera mainCamera;
+    public AircraftController aircraftController;
+    public EjectorManager ejectorManager;
     
     private PlayerInput _playerInput;
-    private AircraftController _aircraftController;
-
     private Vector2 _mousePositionWs;
     
     private void Awake()
@@ -23,8 +25,11 @@ public class PlayerController : MonoBehaviour
         _playerInput.Player.StandardThrust.canceled += EndStandardThrust;
         _playerInput.Player.AugmentationThrust.started += StartAugmentationThrust;
         _playerInput.Player.AugmentationThrust.canceled += EndAugmentationThrust;
+        
+        _playerInput.Player.MainAttack.started += StartMainAttack;
+        _playerInput.Player.MainAttack.canceled += EndMainAttack;
 
-        _aircraftController = GetComponent<AircraftController>();
+        //aircraftController = GetComponent<AircraftController>();
         
         _mousePositionWs = Vector2.zero;
         
@@ -33,25 +38,40 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         _mousePositionWs = mainCamera.ScreenToWorldPoint(_playerInput.Player.MousePosition.ReadValue<Vector2>());
-        _aircraftController.SetTargetPosition(_mousePositionWs);
+        aircraftController.SetTargetPosition(_mousePositionWs);
     }
 
     private void StartStandardThrust(InputAction.CallbackContext obj)
     {
-        _aircraftController.StartStandardThrust();
+        aircraftController.StartStandardThrust();
     }
     private void EndStandardThrust(InputAction.CallbackContext obj)
     {
-        _aircraftController.EndStandardThrust();
+        aircraftController.EndStandardThrust();
     }
     
     private void StartAugmentationThrust(InputAction.CallbackContext obj)
     {
-        _aircraftController.StartAugmentationThrust();
+        aircraftController.StartAugmentationThrust();
     }
     private void EndAugmentationThrust(InputAction.CallbackContext obj)
     {
-        _aircraftController.EndAugmentationThrust();
+        aircraftController.EndAugmentationThrust();
+    }
+    
+    private void StartMainAttack(InputAction.CallbackContext obj)
+    {
+        ejectorManager.BeginEject();
+    }
+    private void EndMainAttack(InputAction.CallbackContext obj)
+    {
+        ejectorManager.EndEject();
+    }
+
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        Debug.Log("Log");
     }
 }
     
