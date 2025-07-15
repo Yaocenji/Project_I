@@ -4,18 +4,26 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Serialization;
+using Quaternion = System.Numerics.Quaternion;
+using Random = UnityEngine.Random;
 
 namespace Project_I
 {
 public class GunAndCannonEjector : BasicEjector
 {
     public GameObject gunBullet;
+    [Header("视野长度")]
+    public float sightDistance = 25.0f;
+    [Header("视野缩放")]
+    public float sightSize = 40.0f;
 
     [Header("机枪数据")]
     [Header("冷却")]
     public float gunColdTime = 0.05f;
     [Header("出膛速度")]
-    public float speed = 150.0f;
+    public float speed = 100.0f;
+    [Header("散布")]
+    public float sigma = 5.0f;
     
     // 当前飞机的参数
     private AircraftController _aircraftController;
@@ -69,7 +77,7 @@ public class GunAndCannonEjector : BasicEjector
             newBulletObject.layer = LayerDataManager.Instance.enemyBulletLayer;
 
         newBulletObject.transform.position = transform.position;
-        newBulletObject.transform.rotation = transform.rotation;
+        newBulletObject.transform.rotation = UnityEngine.Quaternion.Euler(0, 0, transform.rotation.eulerAngles.z + Random.Range(-sigma, sigma));
 
         BasicBullet newBullet = newBulletObject.GetComponent<BasicBullet>();
 
@@ -77,6 +85,12 @@ public class GunAndCannonEjector : BasicEjector
         
         newRB.AddForce(_aircraftController.getVelocity * newRB.mass, ForceMode2D.Impulse);
         newRB.AddForce(newRB.mass * speed * newBulletObject.transform.right, ForceMode2D.Impulse);
+    }
+
+    public override Vector3 AimingCameraPos(Vector2 aircraftPos, Vector2 mouseTargetPos, Vector2 targetAircraftPos)
+    {
+        Vector2 pos = aircraftPos + (mouseTargetPos - aircraftPos).normalized * sightDistance;
+        return new Vector3(pos.x, pos.y, sightSize);
     }
 
     public override void Test()

@@ -8,6 +8,10 @@ namespace Project_I
 {
 public class EjectorManager : MonoBehaviour
 {
+    public AircraftController aircraftController;
+    // 获取当前摄像机控制器
+    public CameraController cameraController;
+    
     // 四个发射器
     public BasicEjector ejectorsUp;
     public BasicEjector ejectorsDown;
@@ -18,11 +22,20 @@ public class EjectorManager : MonoBehaviour
     private BasicEjector currEjector;    
     
     // 是否正在瞄准
-    [NonSerialized]
-    public bool isAiming;
+    private bool isAiming;
+    // 瞄准的位置
+    private Vector3 _aimingPosition;
+    public Vector3 AimingPos
+    {
+        get
+        {
+            return _aimingPosition;
+        }
+    }
 
     private void Start()
     {
+        _aimingPosition = Vector3.zero;
         // 进行一些检查
 
         currEjector = null;
@@ -34,6 +47,14 @@ public class EjectorManager : MonoBehaviour
         currEjector = ejectorsUp;
     }
 
+    private void Update()
+    {
+        if (isAiming && currEjector is not null)
+        {
+            _aimingPosition = AimingCameraPos(transform.position, aircraftController.GetTargetPosition(), Vector2.zero);
+        }
+    }
+
     public void SwitchEjector(int t)
     {
         if (t < 0 || t > 4)
@@ -41,16 +62,19 @@ public class EjectorManager : MonoBehaviour
             throw new Exception("Error: switch param error;");
         }
 
-        if (t == 0)
+        if (t == 0 && ejectorsUp is not null)
         {
             currEjector = ejectorsUp;
-        }if (t == 1)
+        }
+        if (t == 1 && ejectorsDown is not null)
         {
             currEjector = ejectorsDown;
-        }if (t == 2)
+        }
+        if (t == 2 && ejectorsLeft is not null)
         {
             currEjector = ejectorsLeft;
-        }if (t == 3)
+        }
+        if (t == 3 && ejectorsRight is not null)
         {
             currEjector = ejectorsRight;
         }
@@ -81,18 +105,21 @@ public class EjectorManager : MonoBehaviour
     public void BeginAiming()
     {
         isAiming = true;
+        cameraController.BeginAiming();
     }
     public void EndAiming()
     {
         isAiming = false;
+        cameraController.EndAiming();
     }
 
-    public void AimingCameraPos(Vector2 aircraftPos, Vector2 mouseTargetPos, Vector2 targetAircraftPos)
+    public Vector3 AimingCameraPos(Vector2 aircraftPos, Vector2 mouseTargetPos, Vector2 targetAircraftPos)
     {
         if (currEjector is not null)
         {
-            currEjector.AimingCameraPos(aircraftPos, mouseTargetPos, targetAircraftPos);
+            return currEjector.AimingCameraPos(aircraftPos, mouseTargetPos, targetAircraftPos);
         }
+        else return Vector3.zero;
     }
 }
     

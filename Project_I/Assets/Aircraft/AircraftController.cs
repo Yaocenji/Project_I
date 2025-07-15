@@ -64,6 +64,9 @@ public class AircraftController : MonoBehaviour
     private Vector2 velocity;
     private float speed;
     private float angularVelocity;
+    
+    // 获取刚体
+    private Rigidbody2D _rigidbody2D;
 
     public Vector2 getVelocity
     {
@@ -82,11 +85,18 @@ public class AircraftController : MonoBehaviour
         velocity = Vector2.zero;
         speed = 0;
         angularVelocity = 0;
+        
+        _rigidbody2D = GetComponent<Rigidbody2D>();
+        _rigidbody2D.mass = mass;
     }
 
     // Update is called once per frame
     void FixedUpdate()
     {
+        // 计算物理量
+        velocity = _rigidbody2D.velocity;
+        speed = velocity.magnitude;
+        
         // 初始化
         {
             sumF = Vector2.zero;
@@ -149,8 +159,10 @@ public class AircraftController : MonoBehaviour
                 angularVelocity = Mathf.Sign(angularVelocity) * currMaxAngularVelocity * fixedFrameTime;
 
             angularVelocity += 0.2f;
-
-            transform.rotation = Quaternion.Euler(0, 0, transform.rotation.eulerAngles.z + angularVelocity);
+            
+            _rigidbody2D.MoveRotation(Quaternion.Euler(0, 0, transform.rotation.eulerAngles.z + angularVelocity));
+            // transform.rotation = Quaternion.Euler(0, 0, transform.rotation.eulerAngles.z + angularVelocity);
+            
             //transform.rotation = Quaternion.Euler(0, 0, transform.rotation.eulerAngles.z + Mathf.Sign(deltaAngle) * currMaxAngularVelocity * fixedFrameTime);
         }
         
@@ -164,19 +176,24 @@ public class AircraftController : MonoBehaviour
             float currStb = speed >= maxWingStablilitySpeed
                 ? horizonalStability
                 : Mathf.Lerp(0, horizonalStability, speed / maxWingStablilitySpeed);
+            
             velocity = (parallelVelocity + verticalVelocity.magnitude * currStb * energyRetention * parallelVelocity.normalized) + verticalVelocity * (1 - currStb);
+            
+            // 加入平行方向的增力
+            sumF += verticalVelocity.magnitude * currStb * energyRetention * mass / fixedFrameTime * parallelVelocity.normalized;
+            // 加入垂直方向的阻力
+            sumF -= currStb * mass / fixedFrameTime  * verticalVelocity;
         }
 
         // 物理计算启动
         {
             // 开始作用 （动量定理）
-            velocity += sumF * fixedFrameTime / mass;
+            // velocity += sumF * fixedFrameTime / mass;
 
             // 开始作用 （产生位移）
-            transform.position += (Vector3)(velocity * fixedFrameTime);
-
-            // 计算物理量
-            speed = velocity.magnitude;
+            // transform.position += (Vector3)(velocity * fixedFrameTime);
+            
+            _rigidbody2D.AddForce(sumF, ForceMode2D.Force);
         }
         
         //Debug.Log(speed);
@@ -185,6 +202,10 @@ public class AircraftController : MonoBehaviour
     public void SetTargetPosition(Vector2 tar)
     {
         _targetPositionWs = tar;
+    }
+    public Vector2 GetTargetPosition()
+    {
+        return _targetPositionWs;
     }
     
     public void StartStandardThrust()

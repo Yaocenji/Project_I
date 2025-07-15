@@ -64,6 +64,15 @@ namespace Project_I
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Aim"",
+                    ""type"": ""Button"",
+                    ""id"": ""b963423d-8484-4173-bfae-15e8c4d29a86"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -110,6 +119,17 @@ namespace Project_I
                     ""action"": ""MainAttack"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""1334c09f-6a5f-4d09-bcb5-4fab4bfd04be"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Aim"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -122,6 +142,7 @@ namespace Project_I
             m_Player_StandardThrust = m_Player.FindAction("StandardThrust", throwIfNotFound: true);
             m_Player_AugmentationThrust = m_Player.FindAction("AugmentationThrust", throwIfNotFound: true);
             m_Player_MainAttack = m_Player.FindAction("MainAttack", throwIfNotFound: true);
+            m_Player_Aim = m_Player.FindAction("Aim", throwIfNotFound: true);
         }
 
         ~@PlayerInput()
@@ -192,6 +213,7 @@ namespace Project_I
         private readonly InputAction m_Player_StandardThrust;
         private readonly InputAction m_Player_AugmentationThrust;
         private readonly InputAction m_Player_MainAttack;
+        private readonly InputAction m_Player_Aim;
         public struct PlayerActions
         {
             private @PlayerInput m_Wrapper;
@@ -200,6 +222,7 @@ namespace Project_I
             public InputAction @StandardThrust => m_Wrapper.m_Player_StandardThrust;
             public InputAction @AugmentationThrust => m_Wrapper.m_Player_AugmentationThrust;
             public InputAction @MainAttack => m_Wrapper.m_Player_MainAttack;
+            public InputAction @Aim => m_Wrapper.m_Player_Aim;
             public InputActionMap Get() { return m_Wrapper.m_Player; }
             public void Enable() { Get().Enable(); }
             public void Disable() { Get().Disable(); }
@@ -221,6 +244,9 @@ namespace Project_I
                 @MainAttack.started += instance.OnMainAttack;
                 @MainAttack.performed += instance.OnMainAttack;
                 @MainAttack.canceled += instance.OnMainAttack;
+                @Aim.started += instance.OnAim;
+                @Aim.performed += instance.OnAim;
+                @Aim.canceled += instance.OnAim;
             }
 
             private void UnregisterCallbacks(IPlayerActions instance)
@@ -237,6 +263,9 @@ namespace Project_I
                 @MainAttack.started -= instance.OnMainAttack;
                 @MainAttack.performed -= instance.OnMainAttack;
                 @MainAttack.canceled -= instance.OnMainAttack;
+                @Aim.started -= instance.OnAim;
+                @Aim.performed -= instance.OnAim;
+                @Aim.canceled -= instance.OnAim;
             }
 
             public void RemoveCallbacks(IPlayerActions instance)
@@ -260,6 +289,7 @@ namespace Project_I
             void OnStandardThrust(InputAction.CallbackContext context);
             void OnAugmentationThrust(InputAction.CallbackContext context);
             void OnMainAttack(InputAction.CallbackContext context);
+            void OnAim(InputAction.CallbackContext context);
         }
     }
 }

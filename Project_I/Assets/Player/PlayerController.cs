@@ -28,6 +28,8 @@ public class PlayerController : MonoBehaviour
         
         _playerInput.Player.MainAttack.started += StartMainAttack;
         _playerInput.Player.MainAttack.canceled += EndMainAttack;
+        _playerInput.Player.Aim.started += StartAim;
+        _playerInput.Player.Aim.canceled += EndAim;
 
         //aircraftController = GetComponent<AircraftController>();
         
@@ -67,11 +69,20 @@ public class PlayerController : MonoBehaviour
     {
         ejectorManager.EndEject();
     }
+    
+    private void StartAim(InputAction.CallbackContext obj)
+    {
+        ejectorManager.BeginAiming();
+    }
+    private void EndAim(InputAction.CallbackContext obj)
+    {
+        ejectorManager.EndAiming();
+    }
 
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        Debug.Log("Log");
+        //Debug.Log("Log");
     }
 }
     

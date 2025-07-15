@@ -20,9 +20,9 @@ public class BasicEjector : MonoBehaviour
         return;
     }
 
-    public virtual Vector2 AimingCameraPos(Vector2 aircraftPos, Vector2 mouseTargetPos, Vector2 targetAircraftPos)
+    public virtual Vector3 AimingCameraPos(Vector2 aircraftPos, Vector2 mouseTargetPos, Vector2 targetAircraftPos)
     {
-        return Vector2.zero;
+        return Vector3.zero;
     }
 
     public virtual void Test()
