@@ -8,7 +8,7 @@ namespace Project_I
 {
 public class BasicEnemy : MonoBehaviour
 {
-    public AircraftController aircraftController;
+    private AircraftController aircraftController;
     
     [Header("血量")]
     public float hp = 30f;
@@ -16,19 +16,32 @@ public class BasicEnemy : MonoBehaviour
     [NonSerialized]
     public Vector2 targetPos;
 
+    private bool inited = false;
+
     private void Awake()
     {
-        targetPos = Vector2.zero;
+        // 注册敌人
+        GameSceneManager.Instance.RegisterEnemy(gameObject);
     }
 
     private void Start()
     {
-        aircraftController.SetTargetPosition(targetPos);
-        aircraftController.StartStandardThrust();
+        // 要获取的组件
+        aircraftController = GetComponent<AircraftController>();
+        Debug.Log("11111");
+        
+        targetPos = Vector2.zero;
     }
 
     private void Update()
     {
+        if (!inited)
+        {
+            aircraftController.SetTargetPosition(targetPos);
+            aircraftController.StartStandardThrust();
+            inited = true;
+        }
+        
         // 可能的死亡
         if (hp <= 0)
         {

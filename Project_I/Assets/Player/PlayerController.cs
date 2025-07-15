@@ -10,14 +10,21 @@ namespace Project_I
 {
 public class PlayerController : MonoBehaviour
 {
-    public Camera mainCamera;
-    public AircraftController aircraftController;
-    public EjectorManager ejectorManager;
+    // 需要的组件
+    private Camera mainCamera;
+    private AircraftController aircraftController;
+    private EjectorController ejectorController;
     
     private PlayerInput _playerInput;
     private Vector2 _mousePositionWs;
     
     private void Awake()
+    {
+        // 注册成为玩家
+        GameSceneManager.Instance.RegisterPlayer(gameObject);
+    }
+
+    private void Start()
     {
         _playerInput = new PlayerInput();
         _playerInput.Enable();
@@ -31,10 +38,12 @@ public class PlayerController : MonoBehaviour
         _playerInput.Player.Aim.started += StartAim;
         _playerInput.Player.Aim.canceled += EndAim;
 
-        //aircraftController = GetComponent<AircraftController>();
-        
         _mousePositionWs = Vector2.zero;
         
+        // 其他组件
+        mainCamera = GameSceneManager.Instance.mainCamera;
+        aircraftController = GetComponent<AircraftController>();
+        ejectorController = GetComponent<EjectorController>();
     }
 
     void Update()
@@ -63,20 +72,20 @@ public class PlayerController : MonoBehaviour
     
     private void StartMainAttack(InputAction.CallbackContext obj)
     {
-        ejectorManager.BeginEject();
+        ejectorController.BeginEject();
     }
     private void EndMainAttack(InputAction.CallbackContext obj)
     {
-        ejectorManager.EndEject();
+        ejectorController.EndEject();
     }
     
     private void StartAim(InputAction.CallbackContext obj)
     {
-        ejectorManager.BeginAiming();
+        ejectorController.BeginAiming();
     }
     private void EndAim(InputAction.CallbackContext obj)
     {
-        ejectorManager.EndAiming();
+        ejectorController.EndAiming();
     }
 
 

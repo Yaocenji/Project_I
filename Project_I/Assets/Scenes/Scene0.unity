@@ -576,9 +576,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1893163975}
+  - component: {fileID: 1893163977}
   - component: {fileID: 1893163976}
   m_Layer: 0
-  m_Name: LayerDataManager
+  m_Name: GameManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -616,6 +617,18 @@ MonoBehaviour:
   enemyLayer: 0
   friendlyBulletLayer: 0
   enemyBulletLayer: 0
+--- !u!114 &1893163977
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1893163974}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6f2f28117e64e5ab43d19c401f492a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &2051848813 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2868292754045908573, guid: 4b81563a88dade0418155ba0850eccec, type: 3}
@@ -633,7 +646,7 @@ SceneRoots:
   m_Roots:
   - {fileID: 519420032}
   - {fileID: 619394802}
+  - {fileID: 1893163975}
   - {fileID: 1870816612}
   - {fileID: 1872983942}
-  - {fileID: 1893163975}
   - {fileID: 1108500321}

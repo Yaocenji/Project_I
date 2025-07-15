@@ -7,8 +7,10 @@ namespace Project_I
 {
 public class CameraController : MonoBehaviour
 {
-    public Transform player;
-    public EjectorManager playerEjectorManager;
+    [Header("玩家位姿")]
+    private Transform playerTransform;
+    [Header("玩家发射器")]
+    private EjectorController playerEjectorController;
 
     private Camera cam;
 
@@ -22,21 +24,33 @@ public class CameraController : MonoBehaviour
 
     private void Awake()
     {
+        // 注册为主摄像机
+        GameSceneManager.Instance.RegisterMainCamera(GetComponent<Camera>());
+        
+    }
+
+    private void Start()
+    {
         normalPosition = Vector2.zero;
+        
         cam = GetComponent<Camera>();
+        
+        // 要用到的场景中的其他脚本，通过GameSceneManager获取
+        playerTransform = GameSceneManager.Instance.player.transform;
+        playerEjectorController = GameSceneManager.Instance.player.GetComponent<EjectorController>();
     }
 
     void FixedUpdate()
     {
         if (isAiming)
         {
-            aimingPosition = playerEjectorManager.AimingPos;
+            aimingPosition = playerEjectorController.AimingPos;
             targetPosition = aimingPosition;
-            targetCameraSize = playerEjectorManager.AimingPos.z;
+            targetCameraSize = playerEjectorController.AimingPos.z;
         }
         else
         {
-            normalPosition = new Vector2(player.position.x, player.position.y);
+            normalPosition = new Vector2(playerTransform.position.x, playerTransform.position.y);
             targetPosition = normalPosition;
             targetCameraSize = 20;
         }

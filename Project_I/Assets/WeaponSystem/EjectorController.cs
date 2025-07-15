@@ -6,11 +6,12 @@ using UnityEngine;
 
 namespace Project_I
 {
-public class EjectorManager : MonoBehaviour
+public class EjectorController : MonoBehaviour
 {
-    public AircraftController aircraftController;
+    // 玩家机体控制器
+    private AircraftController aircraftController;
     // 获取当前摄像机控制器
-    public CameraController cameraController;
+    private CameraController cameraController;
     
     // 四个发射器
     public BasicEjector ejectorsUp;
@@ -45,6 +46,11 @@ public class EjectorManager : MonoBehaviour
         // Debug
         // ejectorsUp.Test();
         currEjector = ejectorsUp;
+        
+        // 要获取的其他组件
+        aircraftController = GetComponent<AircraftController>();
+        // 要获取的外部组件
+        cameraController = GameSceneManager.Instance.mainCamera.GetComponent<CameraController>();
     }
 
     private void Update()

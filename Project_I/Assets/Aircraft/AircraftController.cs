@@ -16,7 +16,6 @@ public class AircraftController : MonoBehaviour
     private const float fixedFrameTime = 0.02f;
     
     // 飞机参数
-    
     [Header("慢车出力")]
     public float engineF_0 = 1.0f;
     [Header("满车出力")]
@@ -76,7 +75,7 @@ public class AircraftController : MonoBehaviour
         }
     }
     
-    void Awake()
+    void Start()
     {
         _targetPositionWs = transform.position + transform.right;
         speed = 0;

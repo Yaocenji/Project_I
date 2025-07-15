@@ -2,6 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+namespace Project_I
+{
+
 public class LayerDataManager : MonoBehaviour
 {
     public static LayerDataManager Instance;
@@ -28,4 +31,8 @@ public class LayerDataManager : MonoBehaviour
     {
         
     }
+}
+        
+
+    
 }
