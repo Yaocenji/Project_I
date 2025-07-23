@@ -12,10 +12,6 @@ namespace Project_I
 public class GunAndCannonEjector : BasicEjector
 {
     public GameObject gunBullet;
-    [Header("视野长度")]
-    public float sightDistance = 25.0f;
-    [Header("视野缩放")]
-    public float sightSize = 40.0f;
 
     [Header("机枪数据")]
     [Header("冷却")]
@@ -87,10 +83,9 @@ public class GunAndCannonEjector : BasicEjector
         newRB.AddForce(newRB.mass * speed * newBulletObject.transform.right, ForceMode2D.Impulse);
     }
 
-    public override Vector3 AimingCameraPos(Vector2 aircraftPos, Vector2 mouseTargetPos, Vector2 targetAircraftPos)
+    public override Vector2 AimingCameraPos(Vector2 aircraftPos, Vector2 mouseTargetPos, Vector2 targetAircraftPos)
     {
-        Vector2 pos = aircraftPos + (mouseTargetPos - aircraftPos).normalized * sightDistance;
-        return new Vector3(pos.x, pos.y, sightSize);
+        return aircraftPos + (mouseTargetPos - aircraftPos).normalized * aimingCameraDistance / 2.0f;
     }
 
     public override void Test()

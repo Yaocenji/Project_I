@@ -21,6 +21,9 @@ public class GameSceneManager : MonoBehaviour
     private List<GameObject> _enemy;
     public List<GameObject> enemy { get => _enemy; }
 
+    private GameObject _frontSight;
+    public GameObject frontSight { get => _frontSight; }
+
     private void Awake()
     {
         Instance = this;
@@ -50,6 +53,15 @@ public class GameSceneManager : MonoBehaviour
     public void RegisterEnemy(GameObject en)
     {
         _enemy.Add(en);
+    }
+    
+    // 注册准星
+    public bool RegisterFrontSight(GameObject fs)
+    {
+        if (_frontSight is not null)
+            return false;
+        _frontSight = fs;
+        return true;
     }
     
 }

@@ -11,12 +11,21 @@ namespace Project_I
 public class PlayerController : MonoBehaviour
 {
     // 需要的组件
-    private Camera mainCamera;
     private AircraftController aircraftController;
     private EjectorController ejectorController;
     
     private PlayerInput _playerInput;
     private Vector2 _mousePositionWs;
+
+    public PlayerInput getInputActions
+    {
+        get => _playerInput;
+    }
+
+    public Vector2 mousePositionWs
+    {
+        get => _mousePositionWs;
+    }
     
     private void Awake()
     {
@@ -41,15 +50,14 @@ public class PlayerController : MonoBehaviour
         _mousePositionWs = Vector2.zero;
         
         // 其他组件
-        mainCamera = GameSceneManager.Instance.mainCamera;
         aircraftController = GetComponent<AircraftController>();
         ejectorController = GetComponent<EjectorController>();
     }
 
     void Update()
     {
-        _mousePositionWs = mainCamera.ScreenToWorldPoint(_playerInput.Player.MousePosition.ReadValue<Vector2>());
-        aircraftController.SetTargetPosition(_mousePositionWs);
+        // _mousePositionWs = mainCamera.ScreenToWorldPoint(_playerInput.Player.MousePosition.ReadValue<Vector2>());
+        // aircraftController.SetTargetPosition(_mousePositionWs);
     }
 
     private void StartStandardThrust(InputAction.CallbackContext obj)

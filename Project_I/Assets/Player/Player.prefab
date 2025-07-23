@@ -71,17 +71,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 3304511844292798268}
   m_SourcePrefab: {fileID: 100100000, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
---- !u!114 &2868292754045908573 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2736460054655817130, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
-  m_PrefabInstance: {fileID: 159845882806002679}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5124130580767975184}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b85d256ec42f26d4b825a70f48117da1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &5124130580767975184 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4984204296922973415, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
@@ -99,9 +88,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ea0267bb1ea2f7d45ba681b5e40e746f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mainCamera: {fileID: 0}
-  aircraftController: {fileID: 6805388253120936610}
-  ejectorManager: {fileID: 2868292754045908573}
 --- !u!114 &3304511844292798268
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -114,6 +100,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d981ece1d0e6aa94c88f96b804a81f82, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  aimingCameraDistance: 25
+  aimingCameraSize: 25
+  aimingMouseSensitivity: 0.5
   gunBullet: {fileID: 3944650675118432336, guid: 9340f7aca2f9381488eb27c0dafc1778, type: 3}
   gunColdTime: 0.05
   speed: 100

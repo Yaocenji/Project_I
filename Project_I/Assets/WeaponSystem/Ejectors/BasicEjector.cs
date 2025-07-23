@@ -2,11 +2,21 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Project_I
 {
 public class BasicEjector : MonoBehaviour
 {
+    [Header("瞄准时的视野长度")]
+    public float aimingCameraDistance = 25.0f;
+    
+    [Header("瞄准时的摄像机尺寸")]
+    public float aimingCameraSize = 25.0f;
+    
+    [Header("瞄准时的鼠标灵敏度倍率")]
+    public float aimingMouseSensitivity = 0.5f;
+    
     public virtual void BeginEject()
     {
         return;
@@ -20,9 +30,9 @@ public class BasicEjector : MonoBehaviour
         return;
     }
 
-    public virtual Vector3 AimingCameraPos(Vector2 aircraftPos, Vector2 mouseTargetPos, Vector2 targetAircraftPos)
+    public virtual Vector2 AimingCameraPos(Vector2 aircraftPos, Vector2 mouseTargetPos, Vector2 targetAircraftPos)
     {
-        return Vector3.zero;
+        return Vector2.zero;
     }
 
     public virtual void Test()

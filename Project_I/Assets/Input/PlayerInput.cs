@@ -73,6 +73,15 @@ namespace Project_I
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""MouseDeltaPosition"",
+                    ""type"": ""PassThrough"",
+                    ""id"": ""c3dd0ce2-cd3a-485d-9c64-e3e3760c64a4"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -130,6 +139,17 @@ namespace Project_I
                     ""action"": ""Aim"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""0bb5a347-6b12-4081-8d46-b2102452adb6"",
+                    ""path"": ""<Mouse>/delta"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""MouseDeltaPosition"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -143,6 +163,7 @@ namespace Project_I
             m_Player_AugmentationThrust = m_Player.FindAction("AugmentationThrust", throwIfNotFound: true);
             m_Player_MainAttack = m_Player.FindAction("MainAttack", throwIfNotFound: true);
             m_Player_Aim = m_Player.FindAction("Aim", throwIfNotFound: true);
+            m_Player_MouseDeltaPosition = m_Player.FindAction("MouseDeltaPosition", throwIfNotFound: true);
         }
 
         ~@PlayerInput()
@@ -214,6 +235,7 @@ namespace Project_I
         private readonly InputAction m_Player_AugmentationThrust;
         private readonly InputAction m_Player_MainAttack;
         private readonly InputAction m_Player_Aim;
+        private readonly InputAction m_Player_MouseDeltaPosition;
         public struct PlayerActions
         {
             private @PlayerInput m_Wrapper;
@@ -223,6 +245,7 @@ namespace Project_I
             public InputAction @AugmentationThrust => m_Wrapper.m_Player_AugmentationThrust;
             public InputAction @MainAttack => m_Wrapper.m_Player_MainAttack;
             public InputAction @Aim => m_Wrapper.m_Player_Aim;
+            public InputAction @MouseDeltaPosition => m_Wrapper.m_Player_MouseDeltaPosition;
             public InputActionMap Get() { return m_Wrapper.m_Player; }
             public void Enable() { Get().Enable(); }
             public void Disable() { Get().Disable(); }
@@ -247,6 +270,9 @@ namespace Project_I
                 @Aim.started += instance.OnAim;
                 @Aim.performed += instance.OnAim;
                 @Aim.canceled += instance.OnAim;
+                @MouseDeltaPosition.started += instance.OnMouseDeltaPosition;
+                @MouseDeltaPosition.performed += instance.OnMouseDeltaPosition;
+                @MouseDeltaPosition.canceled += instance.OnMouseDeltaPosition;
             }
 
             private void UnregisterCallbacks(IPlayerActions instance)
@@ -266,6 +292,9 @@ namespace Project_I
                 @Aim.started -= instance.OnAim;
                 @Aim.performed -= instance.OnAim;
                 @Aim.canceled -= instance.OnAim;
+                @MouseDeltaPosition.started -= instance.OnMouseDeltaPosition;
+                @MouseDeltaPosition.performed -= instance.OnMouseDeltaPosition;
+                @MouseDeltaPosition.canceled -= instance.OnMouseDeltaPosition;
             }
 
             public void RemoveCallbacks(IPlayerActions instance)
@@ -290,6 +319,7 @@ namespace Project_I
             void OnAugmentationThrust(InputAction.CallbackContext context);
             void OnMainAttack(InputAction.CallbackContext context);
             void OnAim(InputAction.CallbackContext context);
+            void OnMouseDeltaPosition(InputAction.CallbackContext context);
         }
     }
 }

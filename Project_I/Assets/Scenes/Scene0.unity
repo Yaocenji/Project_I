@@ -122,11 +122,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!4 &82452852 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 1074348396741484992, guid: 4b81563a88dade0418155ba0850eccec, type: 3}
-  m_PrefabInstance: {fileID: 1872983942}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -277,8 +272,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 053ddcce08eddd84cb29019c3782b919, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 82452852}
-  playerEjectorManager: {fileID: 2051848813}
 --- !u!1 &619394800
 GameObject:
   m_ObjectHideFlags: 0
@@ -361,6 +354,63 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &996206267
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1681655493496818667, guid: 115c64c58de543540b26b18f1aa7bde9, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 3.234
+      objectReference: {fileID: 0}
+    - target: {fileID: 1681655493496818667, guid: 115c64c58de543540b26b18f1aa7bde9, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1681655493496818667, guid: 115c64c58de543540b26b18f1aa7bde9, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1681655493496818667, guid: 115c64c58de543540b26b18f1aa7bde9, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1681655493496818667, guid: 115c64c58de543540b26b18f1aa7bde9, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1681655493496818667, guid: 115c64c58de543540b26b18f1aa7bde9, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1681655493496818667, guid: 115c64c58de543540b26b18f1aa7bde9, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1681655493496818667, guid: 115c64c58de543540b26b18f1aa7bde9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1681655493496818667, guid: 115c64c58de543540b26b18f1aa7bde9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1681655493496818667, guid: 115c64c58de543540b26b18f1aa7bde9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3192892295195671404, guid: 115c64c58de543540b26b18f1aa7bde9, type: 3}
+      propertyPath: m_Name
+      value: FrontSight
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 115c64c58de543540b26b18f1aa7bde9, type: 3}
 --- !u!1001 &1108500321
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -629,17 +679,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a6f2f28117e64e5ab43d19c401f492a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &2051848813 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2868292754045908573, guid: 4b81563a88dade0418155ba0850eccec, type: 3}
-  m_PrefabInstance: {fileID: 1872983942}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b85d256ec42f26d4b825a70f48117da1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -650,3 +689,4 @@ SceneRoots:
   - {fileID: 1870816612}
   - {fileID: 1872983942}
   - {fileID: 1108500321}
+  - {fileID: 996206267}

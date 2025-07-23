@@ -9,12 +9,12 @@ public class CameraController : MonoBehaviour
 {
     [Header("玩家位姿")]
     private Transform playerTransform;
+    [Header("玩家飞行控制器")]
+    private AircraftController playerAircraftController;
     [Header("玩家发射器")]
     private EjectorController playerEjectorController;
 
     private Camera cam;
-
-    private bool isAiming;
 
     private Vector2 normalPosition;
     private Vector2 aimingPosition;
@@ -38,19 +38,21 @@ public class CameraController : MonoBehaviour
         // 要用到的场景中的其他脚本，通过GameSceneManager获取
         playerTransform = GameSceneManager.Instance.player.transform;
         playerEjectorController = GameSceneManager.Instance.player.GetComponent<EjectorController>();
+        playerAircraftController = GameSceneManager.Instance.player.GetComponent<AircraftController>();
     }
 
     void FixedUpdate()
     {
-        if (isAiming)
+        if (playerEjectorController.getAiming)   // 瞄准模式
         {
             aimingPosition = playerEjectorController.AimingPos;
             targetPosition = aimingPosition;
-            targetCameraSize = playerEjectorController.AimingPos.z;
+            targetCameraSize = playerEjectorController.AimingCameraSize;
         }
         else
         {
             normalPosition = new Vector2(playerTransform.position.x, playerTransform.position.y);
+            normalPosition += playerAircraftController.getVelocity * 0.25f;
             targetPosition = normalPosition;
             targetCameraSize = 20;
         }
@@ -59,15 +61,7 @@ public class CameraController : MonoBehaviour
         cam.orthographicSize = (9.0f * cam.orthographicSize + targetCameraSize) / 10.0f;
     }
 
-    public void BeginAiming()
-    {
-        isAiming = true;
-    }public void EndAiming()
-    {
-        isAiming = false;
-    }
 
-    
 }
     
 }

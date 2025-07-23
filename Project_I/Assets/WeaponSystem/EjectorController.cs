@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor.PackageManager;
 using UnityEngine;
 
 namespace Project_I
@@ -10,8 +9,6 @@ public class EjectorController : MonoBehaviour
 {
     // 玩家机体控制器
     private AircraftController aircraftController;
-    // 获取当前摄像机控制器
-    private CameraController cameraController;
     
     // 四个发射器
     public BasicEjector ejectorsUp;
@@ -24,14 +21,23 @@ public class EjectorController : MonoBehaviour
     
     // 是否正在瞄准
     private bool isAiming;
+    public bool getAiming { get => isAiming; }
+    
     // 瞄准的位置
-    private Vector3 _aimingPosition;
-    public Vector3 AimingPos
+    private Vector2 _aimingPosition;
+    public Vector2 AimingPos
     {
-        get
-        {
-            return _aimingPosition;
-        }
+        get => _aimingPosition;
+    }
+    // 瞄准时的摄像机大小
+    public float AimingCameraSize
+    {
+        get => currEjector.aimingCameraSize;
+    }
+    // 瞄准时的鼠标灵敏度倍率
+    public float AimingMouseSensitivity
+    {
+        get => currEjector.aimingMouseSensitivity;
     }
 
     private void Start()
@@ -49,8 +55,6 @@ public class EjectorController : MonoBehaviour
         
         // 要获取的其他组件
         aircraftController = GetComponent<AircraftController>();
-        // 要获取的外部组件
-        cameraController = GameSceneManager.Instance.mainCamera.GetComponent<CameraController>();
     }
 
     private void Update()
@@ -111,21 +115,19 @@ public class EjectorController : MonoBehaviour
     public void BeginAiming()
     {
         isAiming = true;
-        cameraController.BeginAiming();
     }
     public void EndAiming()
     {
         isAiming = false;
-        cameraController.EndAiming();
     }
 
-    public Vector3 AimingCameraPos(Vector2 aircraftPos, Vector2 mouseTargetPos, Vector2 targetAircraftPos)
+    public Vector2 AimingCameraPos(Vector2 aircraftPos, Vector2 mouseTargetPos, Vector2 targetAircraftPos)
     {
         if (currEjector is not null)
         {
             return currEjector.AimingCameraPos(aircraftPos, mouseTargetPos, targetAircraftPos);
         }
-        else return Vector3.zero;
+        else return Vector2.zero;
     }
 }
     

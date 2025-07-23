@@ -28,8 +28,6 @@ public class BasicEnemy : MonoBehaviour
     {
         // 要获取的组件
         aircraftController = GetComponent<AircraftController>();
-        Debug.Log("11111");
-        
         targetPos = Vector2.zero;
     }
 
