@@ -47,6 +47,11 @@ public class PlayerController : MonoBehaviour
         _playerInput.Player.Aim.started += StartAim;
         _playerInput.Player.Aim.canceled += EndAim;
 
+        _playerInput.Player.SwitchToWeaponUp.started += SwithToEjectorUp;
+        _playerInput.Player.SwitchToWeaponDown.started += SwithToEjectorDown;
+        _playerInput.Player.SwitchToWeaponLeft.started += SwithToEjectorLeft;
+        _playerInput.Player.SwitchToWeaponRight.started += SwithToEjectorRight;
+
         _mousePositionWs = Vector2.zero;
         
         // 其他组件
@@ -94,6 +99,23 @@ public class PlayerController : MonoBehaviour
     private void EndAim(InputAction.CallbackContext obj)
     {
         ejectorController.EndAiming();
+    }
+    
+    private void SwithToEjectorUp(InputAction.CallbackContext obj)
+    {
+        ejectorController.SwitchEjector(0);
+    }
+    private void SwithToEjectorDown(InputAction.CallbackContext obj)
+    {
+        ejectorController.SwitchEjector(1);
+    }
+    private void SwithToEjectorLeft(InputAction.CallbackContext obj)
+    {
+        ejectorController.SwitchEjector(2);
+    }
+    private void SwithToEjectorRight(InputAction.CallbackContext obj)
+    {
+        ejectorController.SwitchEjector(3);
     }
 
 

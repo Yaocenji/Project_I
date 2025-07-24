@@ -21,6 +21,7 @@ public class CameraController : MonoBehaviour
 
     private Vector2 targetPosition;
     private float targetCameraSize;
+    private float rawCameraSize;
 
     private void Awake()
     {
@@ -34,6 +35,7 @@ public class CameraController : MonoBehaviour
         normalPosition = Vector2.zero;
         
         cam = GetComponent<Camera>();
+        rawCameraSize = cam.orthographicSize;
         
         // 要用到的场景中的其他脚本，通过GameSceneManager获取
         playerTransform = GameSceneManager.Instance.player.transform;
@@ -54,10 +56,12 @@ public class CameraController : MonoBehaviour
             normalPosition = new Vector2(playerTransform.position.x, playerTransform.position.y);
             normalPosition += playerAircraftController.getVelocity * 0.25f;
             targetPosition = normalPosition;
-            targetCameraSize = 20;
+            targetCameraSize = rawCameraSize;
         }
-        transform.position = new Vector3((4.0f * transform.position.x + targetPosition.x) / 5,
-                                        (4.0f * transform.position.y + targetPosition.y) / 5, -10);
+        
+        // 弹簧趋近
+        transform.position = new Vector3((9.0f * transform.position.x + targetPosition.x) / 10,
+                                        (9.0f * transform.position.y + targetPosition.y) / 10, -10);
         cam.orthographicSize = (9.0f * cam.orthographicSize + targetCameraSize) / 10.0f;
     }
 

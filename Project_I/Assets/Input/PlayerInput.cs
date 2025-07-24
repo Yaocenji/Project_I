@@ -82,6 +82,42 @@ namespace Project_I
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SwitchToWeaponUp"",
+                    ""type"": ""Button"",
+                    ""id"": ""61ed1d76-7e0a-44f1-980f-09dd2990c63e"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SwitchToWeaponDown"",
+                    ""type"": ""Button"",
+                    ""id"": ""1c8b1401-8a55-4d18-a67d-d3d942a5ae93"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SwitchToWeaponLeft"",
+                    ""type"": ""Button"",
+                    ""id"": ""90c1e225-986e-4d48-bf21-c7b023e88150"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SwitchToWeaponRight"",
+                    ""type"": ""Button"",
+                    ""id"": ""ddf0cd15-5311-4c45-b5b3-a36210f55ca7"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -150,6 +186,50 @@ namespace Project_I
                     ""action"": ""MouseDeltaPosition"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""593e46ef-5d39-4262-ab6a-14085a99060c"",
+                    ""path"": ""<Keyboard>/w"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SwitchToWeaponUp"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""8b439f54-6b24-47ba-bd84-15bcbf08b98f"",
+                    ""path"": ""<Keyboard>/s"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SwitchToWeaponDown"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""7129ef0b-75a6-4266-8bf2-7497eea62daa"",
+                    ""path"": ""<Keyboard>/a"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SwitchToWeaponLeft"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""24dd55b4-7305-4726-b98d-fede1a189885"",
+                    ""path"": ""<Keyboard>/d"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SwitchToWeaponRight"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -164,6 +244,10 @@ namespace Project_I
             m_Player_MainAttack = m_Player.FindAction("MainAttack", throwIfNotFound: true);
             m_Player_Aim = m_Player.FindAction("Aim", throwIfNotFound: true);
             m_Player_MouseDeltaPosition = m_Player.FindAction("MouseDeltaPosition", throwIfNotFound: true);
+            m_Player_SwitchToWeaponUp = m_Player.FindAction("SwitchToWeaponUp", throwIfNotFound: true);
+            m_Player_SwitchToWeaponDown = m_Player.FindAction("SwitchToWeaponDown", throwIfNotFound: true);
+            m_Player_SwitchToWeaponLeft = m_Player.FindAction("SwitchToWeaponLeft", throwIfNotFound: true);
+            m_Player_SwitchToWeaponRight = m_Player.FindAction("SwitchToWeaponRight", throwIfNotFound: true);
         }
 
         ~@PlayerInput()
@@ -236,6 +320,10 @@ namespace Project_I
         private readonly InputAction m_Player_MainAttack;
         private readonly InputAction m_Player_Aim;
         private readonly InputAction m_Player_MouseDeltaPosition;
+        private readonly InputAction m_Player_SwitchToWeaponUp;
+        private readonly InputAction m_Player_SwitchToWeaponDown;
+        private readonly InputAction m_Player_SwitchToWeaponLeft;
+        private readonly InputAction m_Player_SwitchToWeaponRight;
         public struct PlayerActions
         {
             private @PlayerInput m_Wrapper;
@@ -246,6 +334,10 @@ namespace Project_I
             public InputAction @MainAttack => m_Wrapper.m_Player_MainAttack;
             public InputAction @Aim => m_Wrapper.m_Player_Aim;
             public InputAction @MouseDeltaPosition => m_Wrapper.m_Player_MouseDeltaPosition;
+            public InputAction @SwitchToWeaponUp => m_Wrapper.m_Player_SwitchToWeaponUp;
+            public InputAction @SwitchToWeaponDown => m_Wrapper.m_Player_SwitchToWeaponDown;
+            public InputAction @SwitchToWeaponLeft => m_Wrapper.m_Player_SwitchToWeaponLeft;
+            public InputAction @SwitchToWeaponRight => m_Wrapper.m_Player_SwitchToWeaponRight;
             public InputActionMap Get() { return m_Wrapper.m_Player; }
             public void Enable() { Get().Enable(); }
             public void Disable() { Get().Disable(); }
@@ -273,6 +365,18 @@ namespace Project_I
                 @MouseDeltaPosition.started += instance.OnMouseDeltaPosition;
                 @MouseDeltaPosition.performed += instance.OnMouseDeltaPosition;
                 @MouseDeltaPosition.canceled += instance.OnMouseDeltaPosition;
+                @SwitchToWeaponUp.started += instance.OnSwitchToWeaponUp;
+                @SwitchToWeaponUp.performed += instance.OnSwitchToWeaponUp;
+                @SwitchToWeaponUp.canceled += instance.OnSwitchToWeaponUp;
+                @SwitchToWeaponDown.started += instance.OnSwitchToWeaponDown;
+                @SwitchToWeaponDown.performed += instance.OnSwitchToWeaponDown;
+                @SwitchToWeaponDown.canceled += instance.OnSwitchToWeaponDown;
+                @SwitchToWeaponLeft.started += instance.OnSwitchToWeaponLeft;
+                @SwitchToWeaponLeft.performed += instance.OnSwitchToWeaponLeft;
+                @SwitchToWeaponLeft.canceled += instance.OnSwitchToWeaponLeft;
+                @SwitchToWeaponRight.started += instance.OnSwitchToWeaponRight;
+                @SwitchToWeaponRight.performed += instance.OnSwitchToWeaponRight;
+                @SwitchToWeaponRight.canceled += instance.OnSwitchToWeaponRight;
             }
 
             private void UnregisterCallbacks(IPlayerActions instance)
@@ -295,6 +399,18 @@ namespace Project_I
                 @MouseDeltaPosition.started -= instance.OnMouseDeltaPosition;
                 @MouseDeltaPosition.performed -= instance.OnMouseDeltaPosition;
                 @MouseDeltaPosition.canceled -= instance.OnMouseDeltaPosition;
+                @SwitchToWeaponUp.started -= instance.OnSwitchToWeaponUp;
+                @SwitchToWeaponUp.performed -= instance.OnSwitchToWeaponUp;
+                @SwitchToWeaponUp.canceled -= instance.OnSwitchToWeaponUp;
+                @SwitchToWeaponDown.started -= instance.OnSwitchToWeaponDown;
+                @SwitchToWeaponDown.performed -= instance.OnSwitchToWeaponDown;
+                @SwitchToWeaponDown.canceled -= instance.OnSwitchToWeaponDown;
+                @SwitchToWeaponLeft.started -= instance.OnSwitchToWeaponLeft;
+                @SwitchToWeaponLeft.performed -= instance.OnSwitchToWeaponLeft;
+                @SwitchToWeaponLeft.canceled -= instance.OnSwitchToWeaponLeft;
+                @SwitchToWeaponRight.started -= instance.OnSwitchToWeaponRight;
+                @SwitchToWeaponRight.performed -= instance.OnSwitchToWeaponRight;
+                @SwitchToWeaponRight.canceled -= instance.OnSwitchToWeaponRight;
             }
 
             public void RemoveCallbacks(IPlayerActions instance)
@@ -320,6 +436,10 @@ namespace Project_I
             void OnMainAttack(InputAction.CallbackContext context);
             void OnAim(InputAction.CallbackContext context);
             void OnMouseDeltaPosition(InputAction.CallbackContext context);
+            void OnSwitchToWeaponUp(InputAction.CallbackContext context);
+            void OnSwitchToWeaponDown(InputAction.CallbackContext context);
+            void OnSwitchToWeaponLeft(InputAction.CallbackContext context);
+            void OnSwitchToWeaponRight(InputAction.CallbackContext context);
         }
     }
 }

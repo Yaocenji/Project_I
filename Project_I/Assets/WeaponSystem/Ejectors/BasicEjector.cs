@@ -17,6 +17,9 @@ public class BasicEjector : MonoBehaviour
     [Header("瞄准时的鼠标灵敏度倍率")]
     public float aimingMouseSensitivity = 0.5f;
     
+    [Header("瞄准时的时间流速倍率")]
+    public float aimingTimeScale = 0.5f;
+    
     public virtual void BeginEject()
     {
         return;

@@ -19,7 +19,7 @@ public class GunAndCannonEjector : BasicEjector
     [Header("出膛速度")]
     public float speed = 100.0f;
     [Header("散布")]
-    public float sigma = 5.0f;
+    public float sigma = 2.50f;
     
     // 当前飞机的参数
     private AircraftController _aircraftController;

@@ -15,6 +15,7 @@ public class LayerDataManager : MonoBehaviour
     public int enemyLayer;
     public int friendlyBulletLayer;
     public int enemyBulletLayer;
+    public int groundLayer;
     void Awake()
     {
         Instance = this;
@@ -24,6 +25,7 @@ public class LayerDataManager : MonoBehaviour
         enemyLayer = LayerMask.NameToLayer("Enemy");
         friendlyBulletLayer = LayerMask.NameToLayer("FriendlyBullet");
         enemyBulletLayer = LayerMask.NameToLayer("EnemyBullet");
+        groundLayer = LayerMask.NameToLayer("Ground");
     }
 
     // Update is called once per frame

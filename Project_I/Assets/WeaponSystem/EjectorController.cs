@@ -39,6 +39,11 @@ public class EjectorController : MonoBehaviour
     {
         get => currEjector.aimingMouseSensitivity;
     }
+    // 瞄准时的时间流速倍率
+    public float AimingTimeScale
+    {
+        get => currEjector.aimingTimeScale;
+    }
 
     private void Start()
     {
@@ -48,8 +53,11 @@ public class EjectorController : MonoBehaviour
         currEjector = null;
         isAiming = false;
         
+        // 测试武备代码
         ejectorsUp = GetComponent<GunAndCannonEjector>();
-        // Debug
+        ejectorsDown = GetComponent<SmallBombEjector>();
+        
+        // Debug 
         // ejectorsUp.Test();
         currEjector = ejectorsUp;
         

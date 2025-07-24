@@ -58,6 +58,42 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "SwitchToWeaponUp",
+                    "type": "Button",
+                    "id": "61ed1d76-7e0a-44f1-980f-09dd2990c63e",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "SwitchToWeaponDown",
+                    "type": "Button",
+                    "id": "1c8b1401-8a55-4d18-a67d-d3d942a5ae93",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "SwitchToWeaponLeft",
+                    "type": "Button",
+                    "id": "90c1e225-986e-4d48-bf21-c7b023e88150",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "SwitchToWeaponRight",
+                    "type": "Button",
+                    "id": "ddf0cd15-5311-4c45-b5b3-a36210f55ca7",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -124,6 +160,50 @@
                     "processors": "",
                     "groups": "",
                     "action": "MouseDeltaPosition",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "593e46ef-5d39-4262-ab6a-14085a99060c",
+                    "path": "<Keyboard>/w",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SwitchToWeaponUp",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "8b439f54-6b24-47ba-bd84-15bcbf08b98f",
+                    "path": "<Keyboard>/s",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SwitchToWeaponDown",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "7129ef0b-75a6-4266-8bf2-7497eea62daa",
+                    "path": "<Keyboard>/a",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SwitchToWeaponLeft",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "24dd55b4-7305-4726-b98d-fede1a189885",
+                    "path": "<Keyboard>/d",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SwitchToWeaponRight",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

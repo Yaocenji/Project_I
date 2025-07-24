@@ -70,6 +70,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4984204296922973415, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3304511844292798268}
+    - targetCorrespondingSourceObject: {fileID: 4984204296922973415, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3905397144771315387}
   m_SourcePrefab: {fileID: 100100000, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
 --- !u!1 &5124130580767975184 stripped
 GameObject:
@@ -103,10 +106,32 @@ MonoBehaviour:
   aimingCameraDistance: 25
   aimingCameraSize: 25
   aimingMouseSensitivity: 0.5
+  aimingTimeScale: 0.5
   gunBullet: {fileID: 3944650675118432336, guid: 9340f7aca2f9381488eb27c0dafc1778, type: 3}
   gunColdTime: 0.05
   speed: 100
-  sigma: 5
+  sigma: 2.5
+--- !u!114 &3905397144771315387
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5124130580767975184}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7639dd9d82ab9024f8a94feaace10410, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  aimingCameraDistance: 25
+  aimingCameraSize: 25
+  aimingMouseSensitivity: 0.5
+  aimingTimeScale: 0.5
+  smallBomb: {fileID: 3944650675118432336, guid: a7d6b524b7e25754a9e15d317180ac77, type: 3}
+  bombNumber: 4
+  bombColdTime: 8
+  speed: 2.5
+  sigma: 3
 --- !u!114 &6805388253120936610 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
