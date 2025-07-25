@@ -128,10 +128,12 @@ MonoBehaviour:
   aimingMouseSensitivity: 0.5
   aimingTimeScale: 0.5
   smallBomb: {fileID: 3944650675118432336, guid: a7d6b524b7e25754a9e15d317180ac77, type: 3}
+  aimingSightPrefab: {fileID: 2673231601570944089, guid: 8d258bb95648177499ffd659f86b7c01, type: 3}
   bombNumber: 4
   bombColdTime: 8
   speed: 2.5
   sigma: 3
+  stepTime: 0.05
 --- !u!114 &6805388253120936610 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}

@@ -123,10 +123,18 @@ public class EjectorController : MonoBehaviour
     public void BeginAiming()
     {
         isAiming = true;
+        if (currEjector is not null)
+        {
+            currEjector.BeginAiming();
+        }
     }
     public void EndAiming()
     {
         isAiming = false;
+        if (currEjector is not null)
+        {
+            currEjector.EndAiming();
+        }
     }
 
     public Vector2 AimingCameraPos(Vector2 aircraftPos, Vector2 mouseTargetPos, Vector2 targetAircraftPos)

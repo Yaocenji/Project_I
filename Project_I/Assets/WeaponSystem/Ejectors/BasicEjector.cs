@@ -38,6 +38,15 @@ public class BasicEjector : MonoBehaviour
         return Vector2.zero;
     }
 
+    public virtual void BeginAiming()
+    {
+        
+    }
+    public virtual void EndAiming()
+    {
+        
+    }
+
     public virtual void Test()
     {
         Debug.Log("Basic Class.");
