@@ -80,6 +80,7 @@ public class EjectorController : MonoBehaviour
             throw new Exception("Error: switch param error;");
         }
 
+        var oldEjector = currEjector;
         if (t == 0 && ejectorsUp is not null)
         {
             currEjector = ejectorsUp;
@@ -96,6 +97,8 @@ public class EjectorController : MonoBehaviour
         {
             currEjector = ejectorsRight;
         }
+        oldEjector.SwitchEnd();
+        currEjector.SwitchStart();
     }
     
     public void BeginEject()

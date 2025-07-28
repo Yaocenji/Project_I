@@ -47,6 +47,15 @@ public class BasicEjector : MonoBehaviour
         
     }
 
+    public virtual void SwitchStart()
+    {
+        EndAiming();
+    }
+    public virtual void SwitchEnd()
+    {
+        EndAiming();
+    }
+
     public virtual void Test()
     {
         Debug.Log("Basic Class.");

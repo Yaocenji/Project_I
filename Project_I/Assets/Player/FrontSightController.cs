@@ -30,8 +30,11 @@ public class FrontSightController : MonoBehaviour
         playerController = GameSceneManager.Instance.player.GetComponent<PlayerController>();
         playerEjectorController = GameSceneManager.Instance.player.GetComponent<EjectorController>();
         playerAircraftController = GameSceneManager.Instance.player.GetComponent<AircraftController>();
-
-        _screenPosition = new Vector2(Screen.width / 2.0f, Screen.height / 2.0f);
+        
+        var tempP = mainCamera.WorldToScreenPoint(new Vector2(transform.position.x, transform.position.y));
+        //transform.position = new Vector3(tempP.x, tempP.y, 0);
+        _screenPosition = new Vector2(tempP.x, tempP.y);
+        // _screenPosition = new Vector2(Screen.width / 2.0f, Screen.height / 2.0f);
 
         // 鼠标归位
         Cursor.lockState = CursorLockMode.Locked;
