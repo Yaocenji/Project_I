@@ -125,10 +125,14 @@ public class SmallBombEjector : BasicEjector
     {
         Vector2 aimPos = aircraftPos + (mouseTargetPos - aircraftPos).normalized * aimingCameraDistance;
         
+        // 放弃三点平均位置方法，采用一般方法
+        return (aircraftPos + aimPos) / 2.0f;
+        
         if (_landPositionData == Vector4.zero)
             return (aircraftPos + aimPos) / 2.0f;
         else
         {
+            // 用三点平均位置作为摄像机位置
             // 计算三角形最长边
             aimingCameraSize = Mathf.Max((aircraftPos - aimPos).magnitude,
                 Mathf.Max(((Vector2)_landPositionData - aimPos).magnitude,

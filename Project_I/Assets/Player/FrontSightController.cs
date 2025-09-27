@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Project_I
 {
-    // 将原始鼠标输入的方法转化为鼠标不动而准星移动的方法
+// 将原始鼠标输入的方法转化为鼠标不动而准星移动的方法
 public class FrontSightController : MonoBehaviour
 {
     
