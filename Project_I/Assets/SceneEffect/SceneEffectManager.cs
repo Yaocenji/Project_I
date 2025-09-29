@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Project_I
@@ -12,36 +13,47 @@ public class SceneEffectManager : MonoBehaviour
     [Header("实际地图尺寸（左下角坐标+宽高）")]
     public Vector4 orignalMapLayerAABB = new Vector4(-128, -128, 256, 256);
 
-    [Header("第0层前景缩放倍数")]
-    public float foreGroundLayer0Scale = 2.0f;
+    [Serializable]
+    public class LayerData
+    {
+        public float scale = 1.0f;
+        public GameObject layerGameObject = null;
+    }
     
-    [Header("第1层前景缩放倍数")]
-    public float foreGroundLayer1Scale = 4.0f;
-
-    public GameObject foreGroundLayer0;
-    public GameObject foreGroundLayer1;
+    [Header("前景信息")]
+    public LayerData[]  foreLayerData = new LayerData[2];
+    [Header("背景信息")]
+    public LayerData[]  backLayerData = new LayerData[4];
 
     private void Awake()
     {
         Instance = this;
     }
 
+    private void Start()
+    {
+        // 初始化layer的scale
+        foreach (var layer in Enumerable.Concat(foreLayerData, backLayerData))
+        {
+            layer.layerGameObject.transform.localScale *= layer.scale;
+        }
+    }
+
     void Update()
     {
-        // 从玩家在origin地图的所在位置比例
+        // 玩家世界空间位置
         Vector2 playerPos = GameSceneManager.Instance.player.transform.position;
-        
+        // 玩家相对游戏地图AABB的相对位置
         Vector2 playerPosRelative = playerPos - (Vector2)orignalMapLayerAABB;
-        
+        // 玩家在游戏地图AABB中的比例位置
         Vector2 playerPosProportion = playerPosRelative / new Vector2(orignalMapLayerAABB.z, orignalMapLayerAABB.w);
-
-        Vector2 foreGroundLayer0PosRelative = playerPosRelative * foreGroundLayer0Scale;
-        
-        Vector2 foreGroundLayer1PosRelative = playerPosRelative * foreGroundLayer1Scale;
-
-        foreGroundLayer0.transform.position = playerPos - foreGroundLayer0PosRelative;
-        
-        foreGroundLayer1.transform.position = playerPos - foreGroundLayer1PosRelative;
+        // 设置对应位置
+        foreach (var layer in Enumerable.Concat(foreLayerData, backLayerData))
+        {
+            Vector2 currForeLayerPosRelative = playerPosRelative * layer.scale;
+            layer.layerGameObject.transform.position = playerPos - currForeLayerPosRelative
+                                    + layer.scale * new Vector2(orignalMapLayerAABB.z,  orignalMapLayerAABB.w) / 2.0f;
+        }
         
         Debug.Log(playerPosProportion);
     }
