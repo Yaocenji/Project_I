@@ -6,18 +6,20 @@ namespace Project_I
 {
     namespace AVGpart
     {
-        public class SentencePush
+        // AVG中的“一步”操作
+        public abstract class BasicStep
         {
-            // 是否是普通场景/CG场景
-            public bool IsNormalOrCgBackground = true;
-            
-            // 场景编号/CG编号
-            public int BackgroundIndex;
-            
+            public abstract void Execute();
+        }
+        
+        
+        
+        public class SentencePush: BasicStep
+        {
             // 是否有对话
             public bool HasDialogue = true;
             
-            // -1表示无立绘（心理活动或主角台词）
+            // 当前说话的角色索引与角色名字，-1表示无
             public int CharacterIndex;
             public string CharacterName;
             
@@ -26,6 +28,27 @@ namespace Project_I
             
             // 台词内容
             public string Text;
+
+            public override void Execute()
+            {
+                // TODO realize function Execute()
+            }
+        }
+        
+        
+        public enum BackgroundType
+        {
+            Normal,
+            Cg
+        };
+
+        public class AvgScene
+        {
+            // 是否是普通场景/CG场景
+            public BackgroundType IsNormalOrCgBackground =  BackgroundType.Normal;
+            
+            // 场景编号/CG编号
+            public int BackgroundIndex;
         }
     }
 }
