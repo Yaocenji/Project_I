@@ -13,5 +13,69 @@ MonoBehaviour:
   m_Name: CharacterData
   m_EditorClassIdentifier: 
   charactorInfos:
+  - Name: "\u73C2\u8D5B\u7279"
+    Aliases: []
+    IlluList:
+      IlluList:
+      - ClothingName: "\u6821\u670D"
+        IlluList:
+        - PostureName: "\u62B1\u4E66"
+          IlluList:
+          - ExpressionName: "\u4E25\u8083"
+            Illustration: {fileID: 21300000, guid: 51949d42032a1b643b8cbdf666ed1a5f, type: 3}
+          - ExpressionName: "\u50B2\u5A07"
+            Illustration: {fileID: 21300000, guid: d304c7aa5ff17d2439555fecd4292b38, type: 3}
+          - ExpressionName: "\u5446\u6EDE"
+            Illustration: {fileID: 21300000, guid: d285711a5c5626a479a7948bbab718a8, type: 3}
+          - ExpressionName: "\u5FAE\u7B11"
+            Illustration: {fileID: 21300000, guid: fb6d1e1209b1c834288d4af1201669e5, type: 3}
+          - ExpressionName: "\u60B2\u4F24"
+            Illustration: {fileID: 21300000, guid: 413f18b5c56bb934b8200ebbf8c609f6, type: 3}
+          - ExpressionName: "\u6D45\u7B11"
+            Illustration: {fileID: 21300000, guid: 571322d1569fe8f4593f1fffa2b3011b, type: 3}
+          - ExpressionName: "\u751F\u6C140"
+            Illustration: {fileID: 21300000, guid: 355636a9245f47c428894ff356115646, type: 3}
+          - ExpressionName: "\u751F\u6C141"
+            Illustration: {fileID: 21300000, guid: 2df8bbac6eaee1e4091a9253d0fc81a6, type: 3}
+        - PostureName: "\u62B1\u624B"
+          IlluList:
+          - ExpressionName: "\u4E25\u8083"
+            Illustration: {fileID: 21300000, guid: 2eabd0cccfcb6bf47a6c800826dddcd4, type: 3}
+          - ExpressionName: "\u50B2\u5A07"
+            Illustration: {fileID: 21300000, guid: e034457e40d2b3741994ce85a436e382, type: 3}
+          - ExpressionName: "\u5446\u6EDE"
+            Illustration: {fileID: 21300000, guid: 130ba82b4997f8e4db88ee261dcc8bf3, type: 3}
+          - ExpressionName: "\u5FAE\u7B11"
+            Illustration: {fileID: 21300000, guid: 30121eb8b7317e849844e801df90e9c0, type: 3}
+          - ExpressionName: "\u60B2\u4F24"
+            Illustration: {fileID: 21300000, guid: c079d79edb7b195488bb003af6ca11ea, type: 3}
+          - ExpressionName: "\u6D45\u7B11"
+            Illustration: {fileID: 21300000, guid: 3b329d5cd840cbd4592fa9395c7e42e1, type: 3}
+          - ExpressionName: "\u751F\u6C140"
+            Illustration: {fileID: 21300000, guid: 36b0c6c87c234e949b7ed09a2580ade1, type: 3}
+          - ExpressionName: "\u751F\u6C141"
+            Illustration: {fileID: 21300000, guid: 3015a4daf30463143bf2ea60f020f41b, type: 3}
+      - ClothingName: "\u68D5\u8272\u5E38\u670D"
+        IlluList:
+        - PostureName: "\u62B1\u4E66"
+          IlluList:
+          - ExpressionName: "\u4E25\u8083"
+            Illustration: {fileID: 21300000, guid: 41c27679347b1484ab8f8a80173b0b74, type: 3}
+          - ExpressionName: "\u50B2\u5A07"
+            Illustration: {fileID: 21300000, guid: 96627059836c6704187be3005a0b32d8, type: 3}
+          - ExpressionName: "\u5446\u6EDE"
+            Illustration: {fileID: 21300000, guid: 6774eb56435fc454691371705d004942, type: 3}
+          - ExpressionName: "\u5FAE\u7B11"
+            Illustration: {fileID: 21300000, guid: 56976f9fc4baa2e48a751a5ff89990f7, type: 3}
+          - ExpressionName: "\u60B2\u4F24"
+            Illustration: {fileID: 21300000, guid: 5ec16ac309dfa634ab003addbe7800eb, type: 3}
+          - ExpressionName: "\u6D45\u7B11"
+            Illustration: {fileID: 21300000, guid: fe89257a89da35c4ca1272ad9b6373e2, type: 3}
+          - ExpressionName: "\u751F\u6C140"
+            Illustration: {fileID: 21300000, guid: aa90df3f5f290ee4d96c21ef816eca4b, type: 3}
+          - ExpressionName: "\u751F\u6C141"
+            Illustration: {fileID: 21300000, guid: 3f37c23771a5a83429022fa86860398e, type: 3}
   - Name: 
     Aliases: []
+    IlluList:
+      IlluList: []

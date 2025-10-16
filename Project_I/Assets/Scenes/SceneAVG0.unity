@@ -166,12 +166,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b7c49c507ef00c244b04e498fa862060, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  charactorInfos:
-  - Name: "\u5361\u6D1B\u65AF"
-    Aliases: []
-    Illustrations:
-    - {fileID: 0}
-    - {fileID: 0}
+  data: {fileID: 11400000, guid: 5b91b5a043e46d54f866526523a885a5, type: 2}
+  test: {fileID: 0}
 --- !u!1 &471436898
 GameObject:
   m_ObjectHideFlags: 0

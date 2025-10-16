@@ -9,12 +9,19 @@ namespace Project_I.AVGpart
     {
         public static CharacterManager Instance;
         
-        public readonly CharacterData data;
+        public CharacterData data;
+        
+        public Sprite test;
         
         private void Awake()
         {
             Instance =  this;
             
+        }
+
+        private void Start()
+        {
+            test = data.FindIllustrationSprite("珂赛特", "校服", "抱书", "严肃");
         }
     }
 }
