@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3029a8a94aba1e46ac54b10d43b3d18, type: 3}
+  m_Name: BackgroundData
+  m_EditorClassIdentifier: 
+  backgroundInfos:
+  - Name: "\u90C1\u91D1\u9999\u53F7\u9910\u5385"
+    IlluList:
+      IlluList:
+      - DiffName: "\u5915\u9633"
+        Illustration: {fileID: 21300000, guid: f205083b79e5e754b89b91e7501bf14b, type: 3}
+      - DiffName: "\u98CE\u66B4"
+        Illustration: {fileID: 21300000, guid: aba600b88e45ca84e80832ba07383bcf, type: 3}
+  - Name: "\u90C1\u91D1\u9999\u53F7\u5E9F\u589F"
+    IlluList:
+      IlluList:
+      - DiffName: "\u767D\u5929"
+        Illustration: {fileID: 21300000, guid: a45ccdd0fa762954881faec73f72539e, type: 3}
+      - DiffName: "\u70C8\u706B"
+        Illustration: {fileID: 21300000, guid: 766f1d989f2cfa14f839c64b0a278ebc, type: 3}
+      - DiffName: "\u5927\u96E8"
+        Illustration: {fileID: 21300000, guid: 77cb6cf30a6be194d9cfb26160c0874d, type: 3}
+  - Name: "\u516C\u9986\u5957\u623F"
+    IlluList:
+      IlluList:
+      - DiffName: "\u508D\u665A"
+        Illustration: {fileID: 21300000, guid: 5529dcf718e35164e82ccc0af8dcff33, type: 3}
+      - DiffName: "\u5348\u540E"
+        Illustration: {fileID: 21300000, guid: 6465257677a90b4448b1e5874d6d9175, type: 3}
+      - DiffName: "\u591C\u665A"
+        Illustration: {fileID: 21300000, guid: 1cf1ef5e5da8c8a4f9802e980248438c, type: 3}
+      - DiffName: "\u6708\u591C"
+        Illustration: {fileID: 21300000, guid: fbe0b2b27e8417445b6c570b65baef63, type: 3}
+  - Name: "\u672A\u77E5\u5730\u70B9"
+    IlluList:
+      IlluList:
+      - DiffName: "\u6797\u95F4\u7BDD\u706B"
+        Illustration: {fileID: 21300000, guid: 2945a55dfaf15984e92de8ad940a7f99, type: 3}

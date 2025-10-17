@@ -75,7 +75,17 @@ MonoBehaviour:
             Illustration: {fileID: 21300000, guid: aa90df3f5f290ee4d96c21ef816eca4b, type: 3}
           - ExpressionName: "\u751F\u6C141"
             Illustration: {fileID: 21300000, guid: 3f37c23771a5a83429022fa86860398e, type: 3}
-  - Name: 
+  - Name: "\u670D\u52A1\u751F"
+    Aliases: []
+    IlluList:
+      IlluList:
+      - ClothingName: "\u670D1"
+        IlluList:
+        - PostureName: "\u59FF1"
+          IlluList:
+          - ExpressionName: "\u5FAE\u7B11"
+            Illustration: {fileID: 21300000, guid: 623496ed2d7d7f74ca731aead10b043a, type: 3}
+  - Name: "\u5361\u6D1B\u65AF"
     Aliases: []
     IlluList:
       IlluList: []

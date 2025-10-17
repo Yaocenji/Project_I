@@ -5,25 +5,23 @@ using UnityEngine;
 
 namespace Project_I.AVGpart
 {
-    /*[Serializable]
-    public class BackgroundImageInfo
-    {
-        // 唯一识别名称
-        public string name;
-        // 对应精灵对象
-        public Sprite sprite;
-    }
     
     public class BackgroundImageManager : MonoBehaviour
     {
         public static BackgroundImageManager Instance;
+
+        public BackgroundData data;
         
-        [SerializeField]
-        public  List<BackgroundImageInfo> backgroundImageInfos;
+        public Sprite test;
 
         private void Awake()
         {
             Instance =  this;
         }
-    }*/
+
+        private void Start()
+        {
+            test = data.FindIllustrationSprite("公馆套房", "月夜");
+        }
+    }
 }

@@ -16,12 +16,11 @@ namespace Project_I.AVGpart
         private void Awake()
         {
             Instance =  this;
-            
         }
 
         private void Start()
         {
-            test = data.FindIllustrationSprite("珂赛特", "校服", "抱书", "严肃");
+            test = data.FindIllustrationSprite("服务生", "服1", "姿1", "微笑");
         }
     }
 }
