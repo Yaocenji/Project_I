@@ -8,14 +8,14 @@ namespace Project_I.AVGpart
     [Serializable]
     public class SingleBackgroundIllustrationInfo
     {
-        public string ConditionName;
+        public string DiffName;
         public Sprite Illustration;
     }
     
     [Serializable]
     public class BackgroundIllustrationsInfo
     {
-        List<SingleBackgroundIllustrationInfo> IlluList;
+        public List<SingleBackgroundIllustrationInfo> IlluList;
     }
 
     [Serializable]
@@ -33,5 +33,29 @@ namespace Project_I.AVGpart
     {
         [SerializeField]
         public List<BackgroundInfo> backgroundInfos;
+        
+        // 通过场景名和差分名查找背景图
+        public Sprite FindIllustrationSprite(string backgroundName, string diffName)
+        {
+            Sprite targetIllustration = null;
+            foreach (BackgroundInfo backgroundInfo in backgroundInfos) 
+            {
+                if (!backgroundName.Equals(backgroundInfo.Name))
+                {
+                    continue;
+                }
+                foreach (var singleBackgroundIllustrationInfo in backgroundInfo.IlluList.IlluList)
+                {
+                    if (!diffName.Equals(singleBackgroundIllustrationInfo.DiffName))
+                    {
+                        continue;
+                    }
+                    targetIllustration = singleBackgroundIllustrationInfo.Illustration;
+                    break;
+                }
+                break;
+            }
+            return targetIllustration;
+        }
     }
 }

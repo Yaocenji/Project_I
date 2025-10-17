@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Project_I.AVGpart
 {
-    [Serializable]
+    /*[Serializable]
     public class BackgroundImageInfo
     {
         // 唯一识别名称
@@ -25,5 +25,5 @@ namespace Project_I.AVGpart
         {
             Instance =  this;
         }
-    }
+    }*/
 }
