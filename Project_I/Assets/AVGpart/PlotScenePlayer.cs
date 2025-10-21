@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks.Dataflow;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -72,6 +73,9 @@ namespace Project_I.AVGpart
         [Header("锚点")]
         public Transform HeadIllustrationTop;
         public Transform IdleIllustrationPos;
+        public Transform IllustrationLeft;
+        public Transform IllustrationMiddle;
+        public Transform IllustrationRight;
         
         // 场景中出现的角色
         private List<sceneCharacter> characters;
@@ -302,7 +306,7 @@ namespace Project_I.AVGpart
                 }
             }
         }
-        
+
         // 设置背景图
         public void SetBackground(string backgroundName, string diffName)
         {
@@ -311,7 +315,7 @@ namespace Project_I.AVGpart
             {
                 // 这个要添加一条轨道
                 PerformMoveSequence setBackgroundSequence = new PerformMoveSequence();
-            
+
                 // 当前背景淡出
                 PerformMove_ImageFadeTo bgdFadeOut = new PerformMove_ImageFadeTo(BackgroundImg, 0, 1.5f);
                 // 切换背景图
@@ -319,10 +323,55 @@ namespace Project_I.AVGpart
                     new PerformMove_SwitchIllustration(BackgroundImg, fundSprite);
                 // 当前背景淡入
                 PerformMove_ImageFadeTo bgdFadeIn = new PerformMove_ImageFadeTo(BackgroundImg, 1, 1.5F);
-                
+
                 setBackgroundSequence.moves.Add(bgdFadeOut);
                 setBackgroundSequence.moves.Add(switchIllustration);
                 setBackgroundSequence.moves.Add(bgdFadeIn);
+
+                moveSequenceList.AddLast(setBackgroundSequence);
+            }
+        }
+
+        // 设置CG图
+        public void SetCG(string cgName, string diffName)
+        {
+            var fundSprite = CgManager.Instance.data.FindIllustrationSprite(backgroundName, diffName);
+            if (fundSprite is not null)
+            {
+                // 这个要添加一条轨道
+                PerformMoveSequence setBackgroundSequence = new PerformMoveSequence();
+
+                // 当前背景淡出
+                PerformMove_ImageFadeTo bgdFadeOut = new PerformMove_ImageFadeTo(CgImg, 0, 1.5f);
+                // 切换背景图
+                PerformMove_SwitchIllustration switchIllustration =
+                    new PerformMove_SwitchIllustration(CgImg, fundSprite);
+                // 当前背景淡入
+                PerformMove_ImageFadeTo bgdFadeIn = new PerformMove_ImageFadeTo(CgImg, 1, 1.5F);
+
+                setBackgroundSequence.moves.Add(bgdFadeOut);
+                setBackgroundSequence.moves.Add(switchIllustration);
+                setBackgroundSequence.moves.Add(bgdFadeIn);
+
+                moveSequenceList.AddLast(setBackgroundSequence);
+            }
+        }
+        // 关闭CG图
+        public void DisableCG(string cgName, string diffName)
+        {
+            if (fundSprite is not null)
+            {
+                // 这个要添加一条轨道
+                PerformMoveSequence setBackgroundSequence = new PerformMoveSequence();
+
+                // 当前背景淡出
+                PerformMove_ImageFadeTo bgdFadeOut = new PerformMove_ImageFadeTo(CgImg, 0, 1.5f);
+                // 切换背景图
+                Action switchCGToNull = () => { CgImg.sprite = null; };
+                bgdFadeOut.Callback = switchCGToNull;
+                
+                setBackgroundSequence.moves.Add(bgdFadeOut);
+                setBackgroundSequence.moves.Add(switchIllustration);
                 
                 moveSequenceList.AddLast(setBackgroundSequence);
             }
@@ -431,18 +480,18 @@ namespace Project_I.AVGpart
             
             moveSequenceList.AddLast(sequence);
         }
-        
-        // 显示或旁白
+
+        // 对话
         public void DisplayDialog(string characterName, string text)
         {
             DialogName.text = characterName;
-            
+
             // 轨道：打字机
             PerformMove_TextTypewritter typewritter = new PerformMove_TextTypewritter(text, DialogText, 0.05f);
             PerformMoveSequence textSequence = new PerformMoveSequence();
             textSequence.moves.Add(typewritter);
             moveSequenceList.AddLast(textSequence);
-            
+
             // 人物头像
             sceneCharacter thisCharacter = null;
             foreach (var sc in characters)
@@ -486,7 +535,34 @@ namespace Project_I.AVGpart
                     }
                 }
             }
-            
+
         }
+    
+        // 立绘位置
+        public void SetIllustrationPosition(string characterName, int pos)
+        {
+            sceneCharacter targetSC = null;
+            foreach (var sc in characters)
+            {
+                if (characterName.Equals(sc.characterName))
+                {
+                    targetSC = sc;
+                    break;
+                }
+            }
+
+            if (targetSC.currIllustration is not null)
+            {
+                if (pos == 0)
+                    targetSC.currIllustration.GetComponent<Transform>().position = IllustrationLeft;
+
+                if (pos == 1)
+                    targetSC.currIllustration.GetComponent<Transform>().position = IllustrationMiddle;
+
+                if (pos == 2)
+                    targetSC.currIllustration.GetComponent<Transform>().position = IllustrationRight;
+            }
+        } 
+    
     }
 }

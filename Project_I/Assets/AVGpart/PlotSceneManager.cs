@@ -100,7 +100,7 @@ namespace Project_I.AVGpart
                     }
                     else if (currLine.StartsWith("## ")) // 这表示一个标题，即切换场景
                     {
-                        string chapterName = currLine.Substring(3,  currLine.Length - 3);
+                        string chapterName = currLine.Substring(3, currLine.Length - 3);
                         PlotScenePlayer.Instance.DisplayChapter(chapterName);
                         // 不应当退出
                         // break;
@@ -112,6 +112,11 @@ namespace Project_I.AVGpart
                         break;
                     }
                     else if (currLine.StartsWith("<设置背景>"))
+                    {
+                        string[] backgroundData = currLine.Split(' ');
+                        PlotScenePlayer.Instance.SetBackground(backgroundData[1], backgroundData[2]);
+                    }
+                    else if (currLine.StartsWith("<设置CG>"))
                     {
                         string[] backgroundData = currLine.Split(' ');
                         PlotScenePlayer.Instance.SetBackground(backgroundData[1], backgroundData[2]);
@@ -130,16 +135,26 @@ namespace Project_I.AVGpart
                         string soundName = str[1];
                         float soundVolume = str.Length >= 3 ? float.Parse(str[2]) : 1.0f;
                         float soundStereo = str.Length >= 4 ? float.Parse(str[3]) : 0.0f;
-                        
+
                         PlotScenePlayer.Instance.PlaySound(soundName, true, soundVolume, soundStereo);
                     }
                     else if (currLine.StartsWith("</循环播放>"))
                     {
                         string[] str = currLine.Split(' ');
                         string soundName = str[1];
-                        
+
                         PlotScenePlayer.Instance.EndSound(soundName);
                     }
+                    else if (currLine.StartsWith("<单次播放>"))
+                    {
+                        string[] str = currLine.Split(' ');
+                        string soundName = str[1];
+                        float soundVolume = str.Length >= 3 ? float.Parse(str[2]) : 1.0f;
+                        float soundStereo = str.Length >= 4 ? float.Parse(str[3]) : 0.0f;
+
+                        PlotScenePlayer.Instance.PlaySound(soundName, false, soundVolume, soundStereo);
+                    }
+
                     else if (currLine.StartsWith("--手动断点--"))
                     {
                         break;
@@ -168,7 +183,7 @@ namespace Project_I.AVGpart
                     }
                     else if (currLine.StartsWith("> ")) // 这一行是旁白/主角的内心活动
                     {
-                        string text = currLine.Substring(2,  currLine.Length - 2);
+                        string text = currLine.Substring(2, currLine.Length - 2);
                         PlotScenePlayer.Instance.DisplayNarrator(text);
                         break;
                     }
@@ -176,12 +191,12 @@ namespace Project_I.AVGpart
                     {
                         string[] str = currLine.Split('：');
                         // 人物名字
-                        string characterName = str[0].Substring(2,  str[0].Length - 4);
+                        string characterName = str[0].Substring(2, str[0].Length - 4);
                         // 对话内容
                         string dialogText = str[1];
-                        
+
                         PlotScenePlayer.Instance.DisplayDialog(characterName, dialogText);
-                        
+
                         break;
                     }
                     else
