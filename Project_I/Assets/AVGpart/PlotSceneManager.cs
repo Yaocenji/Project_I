@@ -13,8 +13,10 @@ using UnityEngine.InputSystem;
  */
 namespace Project_I.AVGpart
 {
-    public class PlotScenePlayer: MonoBehaviour
+    public class PlotSceneManager: MonoBehaviour
     {
+        static public PlotSceneManager Instance;
+        
         // 当前游玩的剧情脚本路径
         public string scriptPath;
         
@@ -26,9 +28,10 @@ namespace Project_I.AVGpart
         // 用户输入
         public PlayerInput _playerInput;
         
-        // 播放过程中的变量
-        public Sprite currBackground;
-        public Sprite currCg;
+        // 自动播放
+        public bool autoPlay = false;
+        // 单句自动播放
+        public bool autoPlayOnce = false;
         
         // 分割后的每一行文本
         private string[] plotTextLines;
@@ -36,11 +39,17 @@ namespace Project_I.AVGpart
         // 读取位置
         private int readIndex;
 
+        private void Awake()
+        {
+            Instance = this;
+        }
+
         private void Start()
         {
             scriptReader = new StreamReader(scriptPath);
 
             plotTextLines = testTextAsset.ToString().Split("\n");
+            //Debug.Log(plotTextLines[0]);
             
             _playerInput =  new PlayerInput();
             _playerInput.Enable();
@@ -55,41 +64,153 @@ namespace Project_I.AVGpart
             _playerInput.Disable();
         }
 
+        public void PlayNext(InputAction.CallbackContext obj)
+        {
+            PlayNext();
+        }
+
         // 核心方法：下一步！
-        private void PlayNext(InputAction.CallbackContext obj)
+        private void PlayNext()
         {
             while (true)
             {
                 // 如果播放完毕
                 if (readIndex >= plotTextLines.Length)
                 {
-                    PlayEnd();
+                    SceneEnd();
                 }
                 
                 // 当前脚本行
                 string currLine = plotTextLines[readIndex];
+                if (currLine.EndsWith("\r"))
+                {
+                    currLine = currLine.Substring(0, currLine.Length - 1);
+                }
+                
                 // 开始分析
-                if (currLine == "" || currLine == " ")  // 空白行直接跳过
+                if (currLine == "" || currLine == " " || currLine == "\r")  // 空白行直接跳过
                 {
                     // do nothing.
                 }
                 else // 有内容的行
                 {
-                    if (currLine.StartsWith("## ")) // 用开头的标志识别：这是小章节标题行
+                    if (currLine.StartsWith("<初始化>"))
+                    {
+                        PlotScenePlayer.Instance.InitPlay();
+                    }
+                    else if (currLine.StartsWith("## ")) // 这表示一个标题，即切换场景
                     {
                         string chapterName = currLine.Substring(3,  currLine.Length - 3);
-                        
+                        PlotScenePlayer.Instance.DisplayChapter(chapterName);
+                        // 不应当退出
+                        // break;
                     }
+                    else if (currLine.StartsWith("END")) // 这表示一个标题，即切换场景
+                    {
+                        PlotScenePlayer.Instance.EndChapter();
+                        autoPlayOnce = true;
+                        break;
+                    }
+                    else if (currLine.StartsWith("<设置背景>"))
+                    {
+                        string[] backgroundData = currLine.Split(' ');
+                        PlotScenePlayer.Instance.SetBackground(backgroundData[1], backgroundData[2]);
+                    }
+                    else if (currLine.StartsWith("<出场人物>"))
+                    {
+                        string[] characterStr = currLine.Split(' ');
+                        for (int i = 1; i < characterStr.Length; i++)
+                        {
+                            PlotScenePlayer.Instance.AddCharacter(characterStr[i]);
+                        }
+                    }
+                    else if (currLine.StartsWith("<循环播放>"))
+                    {
+                        string[] str = currLine.Split(' ');
+                        string soundName = str[1];
+                        float soundVolume = str.Length >= 3 ? float.Parse(str[2]) : 1.0f;
+                        float soundStereo = str.Length >= 4 ? float.Parse(str[3]) : 0.0f;
+                        
+                        PlotScenePlayer.Instance.PlaySound(soundName, true, soundVolume, soundStereo);
+                    }
+                    else if (currLine.StartsWith("</循环播放>"))
+                    {
+                        string[] str = currLine.Split(' ');
+                        string soundName = str[1];
+                        
+                        PlotScenePlayer.Instance.EndSound(soundName);
+                    }
+                    else if (currLine.StartsWith("--手动断点--"))
+                    {
+                        break;
+                    }
+                    else if (currLine.StartsWith("--单次自动播放断点--"))
+                    {
+                        autoPlayOnce = true;
+                        break;
+                    }
+                    else if (currLine.StartsWith("<设置立绘>"))
+                    {
+                        string[] characterStr = currLine.Split(' ');
+                        PlotScenePlayer.Instance.SetIllustration(characterStr[1], characterStr[2], characterStr[3], characterStr[4]);
+                    }
+                    else if (currLine.StartsWith("<对话框>"))
+                    {
+                        string[] str = currLine.Split(' ');
+                        if (str[1] == "开")
+                            PlotScenePlayer.Instance.SetDialogBoxDisplay(true);
+                        else if (str[1] == "关")
+                            PlotScenePlayer.Instance.SetDialogBoxDisplay(false);
+                        else
+                        {
+                            // TODO: 报错
+                        }
+                    }
+                    else if (currLine.StartsWith("> ")) // 这一行是旁白/主角的内心活动
+                    {
+                        string text = currLine.Substring(2,  currLine.Length - 2);
+                        PlotScenePlayer.Instance.DisplayNarrator(text);
+                        break;
+                    }
+                    else if (currLine.StartsWith("**")) // 对话
+                    {
+                        string[] str = currLine.Split('：');
+                        // 人物名字
+                        string characterName = str[0].Substring(2,  str[0].Length - 4);
+                        // 对话内容
+                        string dialogText = str[1];
+                        
+                        PlotScenePlayer.Instance.DisplayDialog(characterName, dialogText);
+                        
+                        break;
+                    }
+                    else
+                    {
+                        // TODO: Temporally Do Nothing.
+                    }
+                    
+                    Debug.Log(currLine);
                 }
 
                 readIndex++;
             }
+            readIndex++;
         }
         
-        private 
+        // 一句话播放结束
+        public void PlayEnd()
+        {
+            if (autoPlay)
+                PlayNext();
+            else if (autoPlayOnce)
+            {
+                PlayNext();
+                autoPlayOnce = false;
+            }
+        }
         
-        // 播放结束后的
-        private void PlayEnd()
+        // 整个播放结束后的
+        private void SceneEnd()
         {
             // TODO
         }

@@ -11,7 +11,7 @@ namespace Project_I.AVGpart
         
         public CharacterData data;
         
-        public Sprite test;
+        //public Sprite test;
         
         private void Awake()
         {
@@ -20,7 +20,7 @@ namespace Project_I.AVGpart
 
         private void Start()
         {
-            test = data.FindIllustrationSprite("服务生", "服1", "姿1", "微笑");
+            //test = data.FindIllustrationSprite("服务生", "服1", "姿1", "微笑");
         }
     }
 }

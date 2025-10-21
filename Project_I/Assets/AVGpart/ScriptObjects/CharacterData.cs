@@ -54,7 +54,7 @@ namespace Project_I.AVGpart
     
     
     [Serializable]
-    public class CharactorInfo
+    public class CharacterInfo
     {
         // 角色名（唯一识别代号）
         public string Name;
@@ -72,14 +72,14 @@ namespace Project_I.AVGpart
     public class CharacterData : ScriptableObject
     {
         [SerializeField]
-        public List<CharactorInfo> charactorInfos;
+        public List<CharacterInfo> charactorInfos;
         
         // 按照角色、服装、姿势、表情查找对应立绘
         public Sprite FindIllustrationSprite
         (string characterName, string clothingName, string postureName, string expressionName)
         {
             Sprite targetIllustration = null;
-            foreach (CharactorInfo characterInfo in charactorInfos) 
+            foreach (CharacterInfo characterInfo in charactorInfos) 
             {
                 // 查找是否是这个角色
                 bool isThisCharacter = false;
