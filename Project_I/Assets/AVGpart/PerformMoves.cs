@@ -19,7 +19,11 @@ namespace Project_I.AVGpart
         }
         
         public abstract void Execute(ref float deltaTime);
-        public abstract void ExecuteToEnd();
+
+        public virtual void ExecuteToEnd()
+        {
+            Finish();
+        }
         
         public virtual void Finish()
         {
@@ -319,6 +323,9 @@ namespace Project_I.AVGpart
         public List<PerformMove> moves;
         // 当前运行的动作
         public int currMoveIndex = 0;
+        
+        // 这一帧要不要跳过
+        public bool skip = false;
 
         public PerformMoveSequence()
         {
@@ -345,11 +352,25 @@ namespace Project_I.AVGpart
                 // 否则就直接推进
                 continue;
             }
+
+            if (skip)
+            {
+                moves[currMoveIndex].ExecuteToEnd();
+                moves[currMoveIndex].isCompleted = true;
+                currMoveIndex++;
+                skip = false;
+            }
+            
             // 如果整个序列都执行完了
             if (currMoveIndex >= moves.Count)
             {
                 Finish();
             }
+        }
+
+        public void SkipOneStep()
+        {
+            skip = true;
         }
         
         // 序列执行完毕

@@ -60,6 +60,8 @@ namespace Project_I.AVGpart
             _playerInput.Player.PlayNext.canceled += PlayNext;
 
             readIndex = 0;
+
+            PlayNext();
         }
 
         private void OnDestroy()
@@ -84,6 +86,8 @@ namespace Project_I.AVGpart
         {
             if (!PlotScenePlayer.Instance.IsPlaying)
                 PlayNext();
+            else
+                SkipOneStep();
         }
 
         // 核心方法：下一步！
@@ -273,6 +277,12 @@ namespace Project_I.AVGpart
                 autoPlayOnce = false;
                 Debug.Log("触发单次自动播放");
             }
+        }
+        
+        // 播放到一半时，点击快进
+        public void SkipOneStep()
+        {
+            PlotScenePlayer.Instance.SkipOneStep();
         }
         
         // 整个播放结束后的

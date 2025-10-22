@@ -159,10 +159,20 @@ namespace Project_I.AVGpart
         {
             // TODO
         }
+        
         public void PlayEnd()
         {
             //Debug.Log("这一句播放结束。");
             PlotSceneManager.Instance.PlayEnd();
+        }
+        
+        // 跳过一步
+        public void SkipOneStep()
+        {
+            foreach (PerformMoveSequence sequence in moveSequenceList)
+            {
+                sequence.SkipOneStep();
+            }
         }
         
         void DeleteChildren(Transform parent)
@@ -227,6 +237,25 @@ namespace Project_I.AVGpart
             
             moveSequenceList.Clear();
         }
+        
+        // 分章节时的操作
+        public void DivideChapter()
+        {
+            // 设置所有的文字为空
+            // ChapterCaption.text = "";
+            DialogText.text = "";
+            DialogName.text = "";
+            
+            // 设置所有的透明度为0
+            // CaptionCanvasGroup.alpha = 0;
+            DialogCanvasGroup.alpha = 0;
+            
+            CgImg.color = new Color(CgImg.color.r, CgImg.color.g, CgImg.color.b, 0);
+            CgImg.sprite = null;
+            
+            BackgroundImg.color = new Color(BackgroundImg.color.r, BackgroundImg.color.g, BackgroundImg.color.b, 0);
+            BackgroundImg.sprite = null;
+        }
 
         // 开一个章节标题
         public void DisplayChapter(string chapterName)
@@ -241,8 +270,7 @@ namespace Project_I.AVGpart
             
             PerformMoveSequence blackSequence = new PerformMoveSequence();
             
-            /*// 自带清空功能
-            blackFadin.Callback = () => InitPlay();*/
+            blackFadin.Callback = DivideChapter;
             
             blackSequence.moves.Add(blackFadin);
             blackSequence.moves.Add(blackDnt);
@@ -269,6 +297,15 @@ namespace Project_I.AVGpart
         // 添加这一场的角色
         public void AddCharacter(string characterName)
         {
+            foreach (var character in characters)
+            {
+                if (character.characterName.Equals(characterName))
+                {
+                    // 如果已有这个角色，那么不要添加
+                    return;
+                }
+            }
+            
             CharacterInfo targetCharacter = null;
             foreach (var characterInfo in CharacterManager.Instance.data.charactorInfos)
             {
@@ -411,6 +448,7 @@ namespace Project_I.AVGpart
                 moveSequenceList.AddLast(setBackgroundSequence);
             }
         }
+        
         // 关闭CG图
         public void DisableCG(string cgName, string diffName)
         {

@@ -108,4 +108,4 @@ MonoBehaviour:
         - PostureName: "\u62B1\u624B"
           IlluList:
           - ExpressionName: "\u5FAE\u7B11"
-            Illustration: {fileID: 21300000, guid: 623496ed2d7d7f74ca731aead10b043a, type: 3}
+            Illustration: {fileID: 21300000, guid: afb6b890595b9d5419fd766b353358b5, type: 3}

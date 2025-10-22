@@ -29,6 +29,8 @@ MonoBehaviour:
         Illustration: {fileID: 21300000, guid: 766f1d989f2cfa14f839c64b0a278ebc, type: 3}
       - DiffName: "\u5927\u96E8"
         Illustration: {fileID: 21300000, guid: 77cb6cf30a6be194d9cfb26160c0874d, type: 3}
+      - DiffName: "\u5927\u706F"
+        Illustration: {fileID: 21300000, guid: fa3793ec32c07c4428364a03c241b3fa, type: 3}
   - Name: "\u516C\u9986\u5957\u623F"
     IlluList:
       IlluList:
