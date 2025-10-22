@@ -19,7 +19,6 @@ namespace Project_I.AVGpart
         
         // 当前游玩的剧情脚本路径
         public string scriptPath;
-        
         public TextAsset testTextAsset;
         
         // 文件读取器
@@ -38,6 +37,10 @@ namespace Project_I.AVGpart
         
         // 读取位置
         private int readIndex;
+        
+        // 播放状态
+        private bool oldIsPlaying;
+        private bool isPlaying;
 
         private void Awake()
         {
@@ -46,7 +49,8 @@ namespace Project_I.AVGpart
 
         private void Start()
         {
-            scriptReader = new StreamReader(scriptPath);
+            //scriptReader = new StreamReader(scriptPath);
+            testTextAsset = Resources.Load<TextAsset>(scriptPath) as TextAsset;
 
             plotTextLines = testTextAsset.ToString().Split("\n");
             //Debug.Log(plotTextLines[0]);
@@ -64,9 +68,22 @@ namespace Project_I.AVGpart
             _playerInput.Disable();
         }
 
+        private void Update()
+        {
+            isPlaying = PlotScenePlayer.Instance.IsPlaying;
+
+            /*if (oldIsPlaying && !isPlaying)
+            {
+                PlayEnd();
+            }*/
+            
+            oldIsPlaying = isPlaying;
+        }
+
         public void PlayNext(InputAction.CallbackContext obj)
         {
-            PlayNext();
+            if (!PlotScenePlayer.Instance.IsPlaying)
+                PlayNext();
         }
 
         // 核心方法：下一步！
@@ -91,6 +108,7 @@ namespace Project_I.AVGpart
                 if (currLine == "" || currLine == " " || currLine == "\r")  // 空白行直接跳过
                 {
                     // do nothing.
+                    Debug.Log(readIndex);
                 }
                 else // 有内容的行
                 {
@@ -108,7 +126,6 @@ namespace Project_I.AVGpart
                     else if (currLine.StartsWith("END")) // 这表示一个标题，即切换场景
                     {
                         PlotScenePlayer.Instance.EndChapter();
-                        autoPlayOnce = true;
                         break;
                     }
                     else if (currLine.StartsWith("<设置背景>"))
@@ -118,8 +135,8 @@ namespace Project_I.AVGpart
                     }
                     else if (currLine.StartsWith("<设置CG>"))
                     {
-                        string[] backgroundData = currLine.Split(' ');
-                        PlotScenePlayer.Instance.SetBackground(backgroundData[1], backgroundData[2]);
+                        string[] cgData = currLine.Split(' ');
+                        PlotScenePlayer.Instance.SetCG(cgData[1], cgData[2]);
                     }
                     else if (currLine.StartsWith("<出场人物>"))
                     {
@@ -128,6 +145,11 @@ namespace Project_I.AVGpart
                         {
                             PlotScenePlayer.Instance.AddCharacter(characterStr[i]);
                         }
+                    }
+                    else if (currLine.StartsWith("<人物别名>"))
+                    {
+                        string[] characterStr = currLine.Split(' ');
+                        PlotScenePlayer.Instance.SetCharacterAlias(characterStr[1], characterStr[2]);
                     }
                     else if (currLine.StartsWith("<循环播放>"))
                     {
@@ -169,6 +191,35 @@ namespace Project_I.AVGpart
                         string[] characterStr = currLine.Split(' ');
                         PlotScenePlayer.Instance.SetIllustration(characterStr[1], characterStr[2], characterStr[3], characterStr[4]);
                     }
+                    else if (currLine.StartsWith("<立绘位置>"))
+                    {
+                        string[] characterStr = currLine.Split(' ');
+                        int p = 0;
+                        switch (characterStr[2])
+                        {
+                            case "左":
+                            {
+                                p = 0;
+                                break;
+                            }
+                            case "中":
+                            {
+                                p = 1;
+                                break;
+                            }
+                            case "右":
+                            {
+                                p = 2;
+                                break;
+                            }
+                            case "闲":
+                            {
+                                p = -1;
+                                break;
+                            }
+                        }
+                        PlotScenePlayer.Instance.SetIllustrationPosition(characterStr[1], p);
+                    }
                     else if (currLine.StartsWith("<对话框>"))
                     {
                         string[] str = currLine.Split(' ');
@@ -202,9 +253,8 @@ namespace Project_I.AVGpart
                     else
                     {
                         // TODO: Temporally Do Nothing.
+                        Debug.Log("未识别行：" + currLine);
                     }
-                    
-                    Debug.Log(currLine);
                 }
 
                 readIndex++;
@@ -221,6 +271,7 @@ namespace Project_I.AVGpart
             {
                 PlayNext();
                 autoPlayOnce = false;
+                Debug.Log("触发单次自动播放");
             }
         }
         

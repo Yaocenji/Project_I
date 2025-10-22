@@ -99,3 +99,13 @@ MonoBehaviour:
           IlluList:
           - ExpressionName: "\u5FAE\u7B11"
             Illustration: {fileID: 21300000, guid: 187335cde91a4e243bcbfe929ce111b8, type: 3}
+  - Name: "\u827E\u7EF4"
+    Aliases: []
+    IlluList:
+      IlluList:
+      - ClothingName: "\u6821\u670D"
+        IlluList:
+        - PostureName: "\u62B1\u624B"
+          IlluList:
+          - ExpressionName: "\u5FAE\u7B11"
+            Illustration: {fileID: 21300000, guid: 623496ed2d7d7f74ca731aead10b043a, type: 3}

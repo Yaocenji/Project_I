@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -251,6 +250,7 @@ namespace Project_I.AVGpart
         public PerformMove_AudioVolumeFadeTo(AudioSource audioSource, float value = 1.0f, float process_time = 1.0f) :
             base()
         {
+            targetValue = value;
             this.audioSource = audioSource;
             PROCESS_TIME = process_time;
         }
@@ -294,7 +294,7 @@ namespace Project_I.AVGpart
         {
             t += deltaTime;
             n = (int)(t / singleWordTime);
-            textUI.text = targetText.Substring(0, n);
+            textUI.text = targetText.Substring(0, Mathf.Min(n, targetText.Length));
             if (n >= targetText.Length)
             {
                 Finish();

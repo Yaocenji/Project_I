@@ -16,4 +16,24 @@ MonoBehaviour:
   - Name: "\u6625\u65E5\u5F71"
     sound: {fileID: 8300000, guid: 087bacea6db75374aac2832c6d0a95bf, type: 3}
   - Name: "\u7BDD\u706B\u71C3\u70E7"
-    sound: {fileID: 8300000, guid: 83b8f9d772d51a343817c4561da8782a, type: 3}
+    sound: {fileID: 8300000, guid: 9d205e1c98b52364a8200d06e649d804, type: 3}
+  - Name: "\u9910\u5385\u80CC\u666F"
+    sound: {fileID: 8300000, guid: 789c891d35912c24abf8f147a5993a60, type: 3}
+  - Name: "\u98DE\u8247\u8FD0\u884C"
+    sound: {fileID: 8300000, guid: 605d1d9606e69ce4c89d1b90c2c1bb73, type: 3}
+  - Name: "\u7FFB\u52A8\u4E66\u672C"
+    sound: {fileID: 8300000, guid: 9fd3506e961cf5e4fa97a3f477e4bb80, type: 3}
+  - Name: "\u79BB\u5F00\u811A\u6B65"
+    sound: {fileID: 8300000, guid: 5c4806f1018543041970c678882b0713, type: 3}
+  - Name: "\u5012\u9152"
+    sound: {fileID: 8300000, guid: b785bf236f1c8dc4fb93ed82c2cc9abf, type: 3}
+  - Name: "\u70C8\u706B\u71C3\u70E7"
+    sound: {fileID: 8300000, guid: 9acf3046d7dec4848b9c6bc5478d27a1, type: 3}
+  - Name: "\u96F7\u58F0\u6EDA\u6EDA"
+    sound: {fileID: 8300000, guid: 25eccbd1fc282af4cb025fdfb5cd5c88, type: 3}
+  - Name: "\u96E8\u52BF\u503E\u76C6"
+    sound: {fileID: 8300000, guid: 4ef8fc3d170f56a4ab2b940268eeb10e, type: 3}
+  - Name: "\u6572\u77F3\u5934"
+    sound: {fileID: 8300000, guid: 8569b7640dbab404bb57b65aa1d7cdbf, type: 3}
+  - Name: "\u94F2\u77F3\u5B50"
+    sound: {fileID: 8300000, guid: 92ed15f53ddf6744b8132f95279a1040, type: 3}

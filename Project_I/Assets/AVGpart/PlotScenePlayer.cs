@@ -1,19 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks.Dataflow;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace Project_I.AVGpart
 {
     // 场景中的人物信息与立绘管理器：就是当前显示的内容
     [Serializable]
-    public class sceneCharacter
+    public class sceneCharacter 
     {
         public CharacterInfo characterInfo;
         public string characterName;
+        public string characterAlias;
         public Image currIllustration;
         public Image currHeadIllustration;
     }
@@ -39,6 +38,9 @@ namespace Project_I.AVGpart
         {
             get => isPlaying;
         }
+        
+        // 在这个循环后是否需要插入一次初始化
+        private bool needInit = false;
         
         // 演出用的序列列表
         private LinkedList<PerformMoveSequence> moveSequenceList;
@@ -100,7 +102,7 @@ namespace Project_I.AVGpart
         public void Update()
         {
             // 更新当前的播放状态
-            if (!isPlaying && moveSequenceList.Count >= 0)   // 这一帧之前没有运行，这一帧时开始运行
+            if (!isPlaying && moveSequenceList.Count > 0)   // 这一帧之前没有运行，这一帧时开始运行
             {
                 isPlaying = true;
                 PlayBegin();
@@ -145,6 +147,12 @@ namespace Project_I.AVGpart
                 isPlaying = false;
                 PlayEnd();
             }
+
+            if (needInit)
+            {
+                needInit = false;
+                InitPlay();
+            }
         }
 
         public void PlayBegin()
@@ -163,6 +171,12 @@ namespace Project_I.AVGpart
             {
                 Destroy(parent.GetChild(i).gameObject);
             }
+        }
+
+        // 插入一次初始化，避免在循环中间调用导致错误
+        public void AddInitPlay()
+        {
+            needInit = true;
         }
         
         // 初始化
@@ -188,7 +202,28 @@ namespace Project_I.AVGpart
             BackgroundImg.sprite = null;
             
             // 清空场景角色
+            foreach (var character in characters)
+            {
+                if (character.currHeadIllustration is not null)
+                {
+                    Destroy(character.currHeadIllustration.gameObject);
+                }
+                if (character.currIllustration is not null)
+                {
+                    Destroy(character.currIllustration.gameObject);
+                }
+            }
             characters.Clear();
+            
+            // 清空音效
+            foreach (var sound in sounds)
+            {
+                if (sound.audioSource is not null)
+                {
+                    Destroy(sound.audioSource.gameObject);
+                }
+            }
+            sounds.Clear();
             
             moveSequenceList.Clear();
         }
@@ -201,10 +236,14 @@ namespace Project_I.AVGpart
             
             // 轨道一：转场幕布的淡入淡出
             PerformMove_CanvasGroupFadeTo blackFadin = new PerformMove_CanvasGroupFadeTo(CaptionCanvasGroup, 1, 1.5F);
-            PerformMove_DoNothing blackDnt = new PerformMove_DoNothing(3f);
+            PerformMove_DoNothing blackDnt = new PerformMove_DoNothing(1.5f);
             PerformMove_CanvasGroupFadeTo blackFadout = new PerformMove_CanvasGroupFadeTo(CaptionCanvasGroup, 0f, 1.5F);
             
             PerformMoveSequence blackSequence = new PerformMoveSequence();
+            
+            /*// 自带清空功能
+            blackFadin.Callback = () => InitPlay();*/
+            
             blackSequence.moves.Add(blackFadin);
             blackSequence.moves.Add(blackDnt);
             blackSequence.moves.Add(blackFadout);
@@ -219,10 +258,12 @@ namespace Project_I.AVGpart
             
             // 轨道一：转场幕布的淡入淡出
             PerformMove_CanvasGroupFadeTo blackFadin = new PerformMove_CanvasGroupFadeTo(CaptionCanvasGroup, 1, 1.5F);
-            blackFadin.Callback = () => InitPlay();
+            blackFadin.Callback = () => AddInitPlay();
             
             PerformMoveSequence blackSequence = new PerformMoveSequence();
             blackSequence.moves.Add(blackFadin);
+            
+            moveSequenceList.AddLast(new LinkedListNode<PerformMoveSequence>(blackSequence));
         }
 
         // 添加这一场的角色
@@ -243,11 +284,25 @@ namespace Project_I.AVGpart
                 sceneCharacter newCharacter = new sceneCharacter();
                 newCharacter.characterInfo = targetCharacter;
                 newCharacter.characterName = characterName;
+                newCharacter.characterAlias =  characterName;
                 
                 characters.Add(newCharacter);
             }
         }
 
+        // 修改人物的名字
+        public void SetCharacterAlias(string characterName, string alias)
+        {
+            foreach (var character in characters)
+            {
+                if (character.characterName.Equals(characterName))
+                {
+                    character.characterAlias = alias;
+                    break;
+                }
+            }
+        }
+        
         // 为角色设置立绘
         public void SetIllustration
         (string characterName, string clothingName, string postureName, string expressionName)
@@ -335,23 +390,23 @@ namespace Project_I.AVGpart
         // 设置CG图
         public void SetCG(string cgName, string diffName)
         {
-            var fundSprite = CgManager.Instance.data.FindIllustrationSprite(backgroundName, diffName);
+            var fundSprite = CgManager.Instance.data.FindIllustrationSprite(cgName, diffName);
             if (fundSprite is not null)
             {
                 // 这个要添加一条轨道
                 PerformMoveSequence setBackgroundSequence = new PerformMoveSequence();
 
                 // 当前背景淡出
-                PerformMove_ImageFadeTo bgdFadeOut = new PerformMove_ImageFadeTo(CgImg, 0, 1.5f);
+                PerformMove_ImageFadeTo cgFadeOut = new PerformMove_ImageFadeTo(CgImg, 0, 1.5f);
                 // 切换背景图
                 PerformMove_SwitchIllustration switchIllustration =
                     new PerformMove_SwitchIllustration(CgImg, fundSprite);
                 // 当前背景淡入
-                PerformMove_ImageFadeTo bgdFadeIn = new PerformMove_ImageFadeTo(CgImg, 1, 1.5F);
+                PerformMove_ImageFadeTo cgFadeIn = new PerformMove_ImageFadeTo(CgImg, 1, 1.5F);
 
-                setBackgroundSequence.moves.Add(bgdFadeOut);
+                setBackgroundSequence.moves.Add(cgFadeOut);
                 setBackgroundSequence.moves.Add(switchIllustration);
-                setBackgroundSequence.moves.Add(bgdFadeIn);
+                setBackgroundSequence.moves.Add(cgFadeIn);
 
                 moveSequenceList.AddLast(setBackgroundSequence);
             }
@@ -359,6 +414,7 @@ namespace Project_I.AVGpart
         // 关闭CG图
         public void DisableCG(string cgName, string diffName)
         {
+            var fundSprite = CgManager.Instance.data.FindIllustrationSprite(cgName, diffName);
             if (fundSprite is not null)
             {
                 // 这个要添加一条轨道
@@ -371,7 +427,6 @@ namespace Project_I.AVGpart
                 bgdFadeOut.Callback = switchCGToNull;
                 
                 setBackgroundSequence.moves.Add(bgdFadeOut);
-                setBackgroundSequence.moves.Add(switchIllustration);
                 
                 moveSequenceList.AddLast(setBackgroundSequence);
             }
@@ -381,7 +436,7 @@ namespace Project_I.AVGpart
         public void SetDialogBoxDisplay(bool display)
         {
             // 轨道一：黑幕的淡入淡出
-            PerformMove_CanvasGroupFadeTo fadin = new PerformMove_CanvasGroupFadeTo(DialogCanvasGroup, 1, 1);
+            PerformMove_CanvasGroupFadeTo fadin = new PerformMove_CanvasGroupFadeTo(DialogCanvasGroup, display ? 1f : 0f, 1);
             
             PerformMoveSequence sequence = new PerformMoveSequence();
             sequence.moves.Add(fadin);
@@ -419,7 +474,7 @@ namespace Project_I.AVGpart
             sounds.Add(newSceneSound);
             
             // 添加一个轨道：声音淡入
-            PerformMove_AudioVolumeFadeTo audioVolumeFadeTo = new PerformMove_AudioVolumeFadeTo(newSound, soundVolume, 1);
+            PerformMove_AudioVolumeFadeTo audioVolumeFadeTo = new PerformMove_AudioVolumeFadeTo(newSound, soundVolume, 1.5f);
             
             PerformMoveSequence sequence = new PerformMoveSequence();
             sequence.moves.Add(audioVolumeFadeTo);
@@ -437,7 +492,7 @@ namespace Project_I.AVGpart
                     targetSS = ss;
                     
                     // 添加一个轨道：声音淡出
-                    PerformMove_AudioVolumeFadeTo audioVolumeFadeTo = new PerformMove_AudioVolumeFadeTo(ss.audioSource, 0, 0.75f);
+                    PerformMove_AudioVolumeFadeTo audioVolumeFadeTo = new PerformMove_AudioVolumeFadeTo(ss.audioSource, 0, 1.5f);
 
                     audioVolumeFadeTo.Callback = () => { Destroy(ss.audioSource.gameObject); };
             
@@ -473,7 +528,7 @@ namespace Project_I.AVGpart
             }
             
             // 轨道：打字机
-            PerformMove_TextTypewritter typewritter = new PerformMove_TextTypewritter(text, DialogText, 0.05f);
+            PerformMove_TextTypewritter typewritter = new PerformMove_TextTypewritter(text, DialogText, 0.1f);
             
             PerformMoveSequence sequence = new PerformMoveSequence();
             sequence.moves.Add(typewritter);
@@ -484,10 +539,8 @@ namespace Project_I.AVGpart
         // 对话
         public void DisplayDialog(string characterName, string text)
         {
-            DialogName.text = characterName;
-
             // 轨道：打字机
-            PerformMove_TextTypewritter typewritter = new PerformMove_TextTypewritter(text, DialogText, 0.05f);
+            PerformMove_TextTypewritter typewritter = new PerformMove_TextTypewritter(text, DialogText, 0.1f);
             PerformMoveSequence textSequence = new PerformMoveSequence();
             textSequence.moves.Add(typewritter);
             moveSequenceList.AddLast(textSequence);
@@ -507,6 +560,9 @@ namespace Project_I.AVGpart
             {
                 if (sc == thisCharacter)
                 {
+                    // 名字框
+                    DialogName.text = thisCharacter.characterAlias;
+                    
                     if (sc is null || sc.currHeadIllustration is null || sc.currHeadIllustration is null)
                     {
                         // TODO Temporally Do Nothing.
@@ -553,14 +609,39 @@ namespace Project_I.AVGpart
 
             if (targetSC.currIllustration is not null)
             {
+                PerformMove_ImageFadeTo illFadeOut =  new PerformMove_ImageFadeTo(targetSC.currIllustration, 0, 1);
+
+                Action callback = null;
+
                 if (pos == 0)
-                    targetSC.currIllustration.GetComponent<Transform>().position = IllustrationLeft;
-
-                if (pos == 1)
-                    targetSC.currIllustration.GetComponent<Transform>().position = IllustrationMiddle;
-
-                if (pos == 2)
-                    targetSC.currIllustration.GetComponent<Transform>().position = IllustrationRight;
+                    callback = () =>
+                    {
+                        targetSC.currIllustration.GetComponent<Transform>().position = IllustrationLeft.position;
+                    };
+                else if (pos == 1)
+                    callback = () =>
+                    {
+                        targetSC.currIllustration.GetComponent<Transform>().position = IllustrationMiddle.position;
+                    };
+                else if (pos == 2)
+                    callback = () =>
+                    {
+                        targetSC.currIllustration.GetComponent<Transform>().position = IllustrationRight.position;
+                    };
+                else if (pos == -1)
+                    callback = () =>
+                    {
+                        targetSC.currIllustration.GetComponent<Transform>().position = IdleIllustrationPos.position;
+                    };
+                
+                illFadeOut.Callback = callback;
+                
+                PerformMove_ImageFadeTo illFadeIn =  new PerformMove_ImageFadeTo(targetSC.currIllustration, 1, 1);
+                
+                PerformMoveSequence sequence = new PerformMoveSequence();
+                sequence.moves.Add(illFadeOut);
+                sequence.moves.Add(illFadeIn);
+                moveSequenceList.AddLast(sequence);
             }
         } 
     
