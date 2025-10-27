@@ -34,7 +34,7 @@ public class SmallBombEjector : BasicEjector
     public float stepTime = 0.05f;
     private int _simulateTimes;
     private float _bombMass;
-    // 落点
+    // 落点和法向
     private Vector4 _landPositionData;
     
     // 是否在瞄准
@@ -125,19 +125,29 @@ public class SmallBombEjector : BasicEjector
     {
         Vector2 aimPos = aircraftPos + (mouseTargetPos - aircraftPos).normalized * aimingCameraDistance;
         
-        // 放弃三点平均位置方法，采用一般方法
-        return (aircraftPos + aimPos) / 2.0f;
+        // 不用三点平均位置方法，采用一般方法
+        //return (aircraftPos + aimPos) / 2.0f;
         
+        // 三点平均位置方法
         if (_landPositionData == Vector4.zero)
             return (aircraftPos + aimPos) / 2.0f;
         else
         {
             // 用三点平均位置作为摄像机位置
+            
             // 计算三角形最长边
-            aimingCameraSize = Mathf.Max((aircraftPos - aimPos).magnitude,
+            //aimingCameraSize;
+            float longestEdge = Mathf.Max((aircraftPos - aimPos).magnitude,
                 Mathf.Max(((Vector2)_landPositionData - aimPos).magnitude,
                     ((Vector2)_landPositionData - aircraftPos).magnitude));
-            return (aircraftPos + aimPos + (Vector2)_landPositionData) / 3.0f;
+
+            var newLandPositionData = (Vector2)_landPositionData;
+            if (longestEdge > aimingCameraSize)
+            {
+                newLandPositionData = aircraftPos + (newLandPositionData - aircraftPos).normalized * aimingCameraSize;
+            }
+            
+            return (aircraftPos + aimPos + newLandPositionData) / 3.0f;
         }
     }
 
@@ -169,7 +179,8 @@ public class SmallBombEjector : BasicEjector
         for (int i = 0; i < _simulateTimes; i++)
         {
             // 先进行射线检测
-            var recastResult = Physics2D.Raycast(p, v, v.magnitude * stepTime, LayerDataManager.Instance.groundLayerMask);
+            var recastResult = Physics2D.Raycast(p, v, v.magnitude * stepTime, 
+                LayerDataManager.Instance.groundLayerMask | LayerDataManager.Instance.enemyLayerMask);
             // 如果碰到东西了
             if (recastResult.collider is not null)
             {

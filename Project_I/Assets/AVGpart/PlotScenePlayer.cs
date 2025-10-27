@@ -367,34 +367,43 @@ namespace Project_I.AVGpart
                         expressionName);
                 if (foundSprite is not null)
                 {
+                    if (targetCharacter.currIllustration is null)
+                    {
+                        // 创建新gameobject 和 image
+                        GameObject newCharacterIllustrationGO = new GameObject();
+                        newCharacterIllustrationGO.name = characterName + "_立绘";
+                        newCharacterIllustrationGO.transform.SetParent(illustrationParentGameObject.transform);
+                        // 初始化位置
+                        newCharacterIllustrationGO.transform.position = new Vector3(-1000, 0, 0);
+                        newCharacterIllustrationGO.AddComponent<Image>();
+                        
+                        targetCharacter.currIllustration = newCharacterIllustrationGO.GetComponent<Image>();
+                        
+                        // 还要设置正确的大小
+                        targetCharacter.currIllustration.GetComponent<RectTransform>().sizeDelta = foundSprite.rect.size;
+                    }
                     
-                    // 创建新gameobject 和 image
-                    GameObject newCharacterIllustrationGO = new GameObject();
-                    newCharacterIllustrationGO.name = characterName + "_立绘";
-                    newCharacterIllustrationGO.transform.SetParent(illustrationParentGameObject.transform);
-                    // 初始化位置
-                    newCharacterIllustrationGO.transform.position = new Vector3(-1000, 0, 0);
-                
-                    newCharacterIllustrationGO.AddComponent<Image>();
-                
-                    GameObject newCharacterHeadIllustrationGO = new GameObject();
-                    newCharacterHeadIllustrationGO.name = characterName + "_头像";
-                    newCharacterHeadIllustrationGO.transform.SetParent(headIllustrationParentGameObject.transform);
-                    // 初始化位置
-                    newCharacterHeadIllustrationGO.transform.position = new Vector3(-1000, 0, 0);
-                    newCharacterHeadIllustrationGO.AddComponent<Image>();
-                    
-                    targetCharacter.currIllustration = newCharacterIllustrationGO.GetComponent<Image>();
-                    targetCharacter.currHeadIllustration =  newCharacterHeadIllustrationGO.GetComponent<Image>();
-                    
+                    if (targetCharacter.currHeadIllustration is null)
+                    {
+                        GameObject newCharacterHeadIllustrationGO = new GameObject();
+                        newCharacterHeadIllustrationGO.name = characterName + "_头像";
+                        newCharacterHeadIllustrationGO.transform.SetParent(headIllustrationParentGameObject.transform);
+                        // 初始化位置
+                        newCharacterHeadIllustrationGO.transform.position = new Vector3(-1000, 0, 0);
+                        newCharacterHeadIllustrationGO.AddComponent<Image>();
+
+
+                        targetCharacter.currHeadIllustration = newCharacterHeadIllustrationGO.GetComponent<Image>();
+
+                        targetCharacter.currHeadIllustration.GetComponent<RectTransform>().sizeDelta =
+                            foundSprite.rect.size;
+                        // 关键点：头像的锚点设置到顶部
+                        targetCharacter.currHeadIllustration.GetComponent<RectTransform>().pivot =
+                            new Vector2(0.5f, 1.0f);
+                    }
                     
                     targetCharacter.currIllustration.sprite = foundSprite;
                     targetCharacter.currHeadIllustration.sprite = foundSprite;
-                    // 还要设置正确的大小
-                    targetCharacter.currIllustration.GetComponent<RectTransform>().sizeDelta = foundSprite.rect.size;
-                    targetCharacter.currHeadIllustration.GetComponent<RectTransform>().sizeDelta = foundSprite.rect.size;
-                    // 关键点：头像的锚点设置到顶部
-                    targetCharacter.currHeadIllustration.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 1.0f);
                 }
             }
         }
@@ -523,22 +532,22 @@ namespace Project_I.AVGpart
         public void EndSound(string soundName)
         {
             sceneSound targetSS = null;
-            foreach (var ss in sounds)
+            foreach (var sound in sounds)
             {
-                if (ss.soundName == soundName)
+                if (sound.soundName == soundName)
                 {
-                    targetSS = ss;
+                    targetSS = sound;
                     
                     // 添加一个轨道：声音淡出
-                    PerformMove_AudioVolumeFadeTo audioVolumeFadeTo = new PerformMove_AudioVolumeFadeTo(ss.audioSource, 0, 1.5f);
+                    PerformMove_AudioVolumeFadeTo audioVolumeFadeTo = new PerformMove_AudioVolumeFadeTo(sound.audioSource, 0, 1.5f);
 
-                    audioVolumeFadeTo.Callback = () => { Destroy(ss.audioSource.gameObject); };
+                    audioVolumeFadeTo.Callback = () => { Destroy(sound.audioSource.gameObject); };
             
                     PerformMoveSequence sequence = new PerformMoveSequence();
                     sequence.moves.Add(audioVolumeFadeTo);
                     moveSequenceList.AddLast(sequence);
+                    break;
                 }
-                break;
             }
 
             if (targetSS is not null)
@@ -566,7 +575,7 @@ namespace Project_I.AVGpart
             }
             
             // 轨道：打字机
-            PerformMove_TextTypewritter typewritter = new PerformMove_TextTypewritter(text, DialogText, 0.1f);
+            PerformMove_TextTypewritter typewritter = new PerformMove_TextTypewritter(text, DialogText, 0.075f);
             
             PerformMoveSequence sequence = new PerformMoveSequence();
             sequence.moves.Add(typewritter);
@@ -578,7 +587,7 @@ namespace Project_I.AVGpart
         public void DisplayDialog(string characterName, string text)
         {
             // 轨道：打字机
-            PerformMove_TextTypewritter typewritter = new PerformMove_TextTypewritter(text, DialogText, 0.1f);
+            PerformMove_TextTypewritter typewritter = new PerformMove_TextTypewritter(text, DialogText, 0.075f);
             PerformMoveSequence textSequence = new PerformMoveSequence();
             textSequence.moves.Add(typewritter);
             moveSequenceList.AddLast(textSequence);

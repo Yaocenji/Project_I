@@ -47,3 +47,8 @@ MonoBehaviour:
       IlluList:
       - DiffName: "\u6797\u95F4\u7BDD\u706B"
         Illustration: {fileID: 21300000, guid: 2945a55dfaf15984e92de8ad940a7f99, type: 3}
+  - Name: "\u516C\u9986\u9910\u5385"
+    IlluList:
+      IlluList:
+      - DiffName: "\u6674\u5929"
+        Illustration: {fileID: 21300000, guid: 60a0539740b980744b380389e19c3508, type: 3}

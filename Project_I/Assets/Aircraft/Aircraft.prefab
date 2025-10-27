@@ -196,7 +196,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   engineF_0: 1
   engineF_1: 15.5
-  engineF_2: 30.2
+  engineF_2: 50
   mass: 1
   minRotateRatio: 20
   maxRotateRatio: 75

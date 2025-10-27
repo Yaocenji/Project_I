@@ -109,3 +109,55 @@ MonoBehaviour:
           IlluList:
           - ExpressionName: "\u5FAE\u7B11"
             Illustration: {fileID: 21300000, guid: afb6b890595b9d5419fd766b353358b5, type: 3}
+  - Name: "\u739B\u683C\u4E3D\u7279"
+    Aliases: []
+    IlluList:
+      IlluList:
+      - ClothingName: "\u7EA2\u88D9"
+        IlluList:
+        - PostureName: "\u53C9\u8170"
+          IlluList:
+          - ExpressionName: "\u5FAE\u7B11"
+            Illustration: {fileID: 21300000, guid: 57baebd776b1e5d47a25d7e4d0a4c8a8, type: 3}
+          - ExpressionName: "\u4E25\u8083"
+            Illustration: {fileID: 21300000, guid: 5dc1e4ecc0e155a458a62ebf1175f6fe, type: 3}
+          - ExpressionName: "\u751F\u6C140"
+            Illustration: {fileID: 21300000, guid: 7fbb6cd0abff6f74ab6c0bb5e2889369, type: 3}
+          - ExpressionName: "\u751F\u6C141"
+            Illustration: {fileID: 21300000, guid: 123dae57863b7ef47b7e382016f57b1f, type: 3}
+  - Name: "\u4EA8\u5229"
+    Aliases: []
+    IlluList:
+      IlluList:
+      - ClothingName: "\u897F\u88C5"
+        IlluList:
+        - PostureName: "\u53C9\u8170"
+          IlluList:
+          - ExpressionName: "\u5FAE\u7B11"
+            Illustration: {fileID: 21300000, guid: d4b84c0f95c095c479818b3fd549dc26, type: 3}
+          - ExpressionName: "\u751F\u6C14"
+            Illustration: {fileID: 21300000, guid: 57811567c1b4b8e4f95fec4c2700b592, type: 3}
+          - ExpressionName: "\u751F\u6C141"
+            Illustration: {fileID: 21300000, guid: 28523b7ef76b9ac498c7c0112debfbe6, type: 3}
+  - Name: "\u6208\u5C14\u8328"
+    Aliases: []
+    IlluList:
+      IlluList:
+      - ClothingName: "\u897F\u88C5"
+        IlluList:
+        - PostureName: "\u62BD\u70DF"
+          IlluList:
+          - ExpressionName: "\u4E25\u8083"
+            Illustration: {fileID: 21300000, guid: d3bd1585116a40d43af6860644d6f78a, type: 3}
+  - Name: "\u8DEF\u4EBA\u7532"
+    Aliases: []
+    IlluList:
+      IlluList: []
+  - Name: "\u8DEF\u4EBA\u4E59"
+    Aliases: []
+    IlluList:
+      IlluList: []
+  - Name: "\u8DEF\u4EBA\u4E19"
+    Aliases: []
+    IlluList:
+      IlluList: []

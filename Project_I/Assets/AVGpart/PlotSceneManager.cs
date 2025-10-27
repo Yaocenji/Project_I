@@ -116,7 +116,7 @@ namespace Project_I.AVGpart
                 }
                 else // 有内容的行
                 {
-                    if (currLine.StartsWith("<初始化>"))
+                    if (currLine.StartsWith("<初始化>") || currLine.StartsWith("<Initialization>"))
                     {
                         PlotScenePlayer.Instance.InitPlay();
                     }
@@ -132,17 +132,17 @@ namespace Project_I.AVGpart
                         PlotScenePlayer.Instance.EndChapter();
                         break;
                     }
-                    else if (currLine.StartsWith("<设置背景>"))
+                    else if (currLine.StartsWith("<设置背景>") || currLine.StartsWith("<Background>"))
                     {
                         string[] backgroundData = currLine.Split(' ');
                         PlotScenePlayer.Instance.SetBackground(backgroundData[1], backgroundData[2]);
                     }
-                    else if (currLine.StartsWith("<设置CG>"))
+                    else if (currLine.StartsWith("<设置CG>") || currLine.StartsWith("<CG>"))
                     {
                         string[] cgData = currLine.Split(' ');
                         PlotScenePlayer.Instance.SetCG(cgData[1], cgData[2]);
                     }
-                    else if (currLine.StartsWith("<出场人物>"))
+                    else if (currLine.StartsWith("<出场人物>") || currLine.StartsWith("<Character>"))
                     {
                         string[] characterStr = currLine.Split(' ');
                         for (int i = 1; i < characterStr.Length; i++)
@@ -150,12 +150,12 @@ namespace Project_I.AVGpart
                             PlotScenePlayer.Instance.AddCharacter(characterStr[i]);
                         }
                     }
-                    else if (currLine.StartsWith("<人物别名>"))
+                    else if (currLine.StartsWith("<人物别名>") || currLine.StartsWith("<Alias>"))
                     {
                         string[] characterStr = currLine.Split(' ');
                         PlotScenePlayer.Instance.SetCharacterAlias(characterStr[1], characterStr[2]);
                     }
-                    else if (currLine.StartsWith("<循环播放>"))
+                    else if (currLine.StartsWith("<循环播放>") || currLine.StartsWith("<LoopPlay>"))
                     {
                         string[] str = currLine.Split(' ');
                         string soundName = str[1];
@@ -164,14 +164,14 @@ namespace Project_I.AVGpart
 
                         PlotScenePlayer.Instance.PlaySound(soundName, true, soundVolume, soundStereo);
                     }
-                    else if (currLine.StartsWith("</循环播放>"))
+                    else if (currLine.StartsWith("</循环播放>") || currLine.StartsWith("</LoopPlay>"))
                     {
                         string[] str = currLine.Split(' ');
                         string soundName = str[1];
 
                         PlotScenePlayer.Instance.EndSound(soundName);
                     }
-                    else if (currLine.StartsWith("<单次播放>"))
+                    else if (currLine.StartsWith("<单次播放>") || currLine.StartsWith("<OncePlay>"))
                     {
                         string[] str = currLine.Split(' ');
                         string soundName = str[1];
@@ -181,21 +181,21 @@ namespace Project_I.AVGpart
                         PlotScenePlayer.Instance.PlaySound(soundName, false, soundVolume, soundStereo);
                     }
 
-                    else if (currLine.StartsWith("--手动断点--"))
+                    else if (currLine.StartsWith("--手动断点--") || currLine.StartsWith("--ManualBreakPoint--"))
                     {
                         break;
                     }
-                    else if (currLine.StartsWith("--单次自动播放断点--"))
+                    else if (currLine.StartsWith("--单次自动播放断点--") || currLine.StartsWith("--AutoBreakPoint--"))
                     {
                         autoPlayOnce = true;
                         break;
                     }
-                    else if (currLine.StartsWith("<设置立绘>"))
+                    else if (currLine.StartsWith("<设置立绘>") || currLine.StartsWith("<Illustration>"))
                     {
                         string[] characterStr = currLine.Split(' ');
                         PlotScenePlayer.Instance.SetIllustration(characterStr[1], characterStr[2], characterStr[3], characterStr[4]);
                     }
-                    else if (currLine.StartsWith("<立绘位置>"))
+                    else if (currLine.StartsWith("<立绘位置>") || currLine.StartsWith("<IllustrationPos>"))
                     {
                         string[] characterStr = currLine.Split(' ');
                         int p = 0;
@@ -224,7 +224,7 @@ namespace Project_I.AVGpart
                         }
                         PlotScenePlayer.Instance.SetIllustrationPosition(characterStr[1], p);
                     }
-                    else if (currLine.StartsWith("<对话框>"))
+                    else if (currLine.StartsWith("<对话框>") || currLine.StartsWith("<DialogBox>"))
                     {
                         string[] str = currLine.Split(' ');
                         if (str[1] == "开")

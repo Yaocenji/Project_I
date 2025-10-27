@@ -41,3 +41,15 @@ MonoBehaviour:
     sound: {fileID: 8300000, guid: d6540b7e6d66cbc4089e3760bad5bfa3, type: 3}
   - Name: "\u5F00\u542F\u6728\u95E8"
     sound: {fileID: 8300000, guid: f2ecaad69f732e34ab9bac77a48033d0, type: 3}
+  - Name: "\u76E5\u6D17"
+    sound: {fileID: 8300000, guid: 2c93195763f0ac649bf28b0fc62c6303, type: 3}
+  - Name: "\u6572\u95E8"
+    sound: {fileID: 8300000, guid: 327df8c15e97fb3489fc942cec11ee38, type: 3}
+  - Name: "\u5012\u8336"
+    sound: {fileID: 8300000, guid: 148178ee3b7b52f4aa49746e30423547, type: 3}
+  - Name: "\u6301\u7EED\u811A\u6B65"
+    sound: {fileID: 8300000, guid: 83c045f207d34674b8694b3c3021a136, type: 3}
+  - Name: "\u4EBA\u7FA4\u5608\u6742"
+    sound: {fileID: 8300000, guid: eacb8747f69658d46872879d5410d196, type: 3}
+  - Name: "\u5173\u95ED\u6728\u95E8"
+    sound: {fileID: 8300000, guid: 1d19b7f8c5be0ee4ca3d979f151b15e2, type: 3}

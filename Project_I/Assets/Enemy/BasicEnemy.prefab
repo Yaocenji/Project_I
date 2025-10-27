@@ -57,8 +57,12 @@ PrefabInstance:
       value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: engineF_1
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: maxRotateRatio
-      value: 35
+      value: 25
       objectReference: {fileID: 0}
     - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: minRotateRatio
@@ -92,17 +96,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 4670668410498049319}
   m_SourcePrefab: {fileID: 100100000, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
---- !u!114 &7607103240045649154 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
-  m_PrefabInstance: {fileID: 3879752549044225111}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8141616446919884976}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 305bae13222219c469b672c58bd542e2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &8141616446919884976 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4984204296922973415, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
@@ -120,5 +113,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8008dbc96ada0754dbc368775303d72d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  aircraftController: {fileID: 7607103240045649154}
   hp: 30

@@ -55,7 +55,7 @@ public class SceneEffectManager : MonoBehaviour
                                     + layer.scale * new Vector2(orignalMapLayerAABB.z,  orignalMapLayerAABB.w) / 2.0f;
         }
         
-        Debug.Log(playerPosProportion);
+        //Debug.Log(playerPosProportion);
     }
 
     private void OnDrawGizmos()

@@ -15,7 +15,7 @@ public class FrontSightController : MonoBehaviour
     private EjectorController playerEjectorController;
 
     // 计算各种位置
-    public Vector2 centerPos = new Vector2(300, 300);
+    private Vector2 screenSize;
     private Vector2 _thisMouseDeltaPosition;
     private Vector2 _screenPosition;
 
@@ -31,10 +31,10 @@ public class FrontSightController : MonoBehaviour
         playerEjectorController = GameSceneManager.Instance.player.GetComponent<EjectorController>();
         playerAircraftController = GameSceneManager.Instance.player.GetComponent<AircraftController>();
         
+        screenSize = new Vector2(Screen.width,  Screen.height); 
+        
         var tempP = mainCamera.WorldToScreenPoint(new Vector2(transform.position.x, transform.position.y));
-        //transform.position = new Vector3(tempP.x, tempP.y, 0);
         _screenPosition = new Vector2(tempP.x, tempP.y);
-        // _screenPosition = new Vector2(Screen.width / 2.0f, Screen.height / 2.0f);
 
         // 鼠标归位
         Cursor.lockState = CursorLockMode.Locked;
@@ -60,8 +60,11 @@ public class FrontSightController : MonoBehaviour
             _thisMouseDeltaPosition *= playerEjectorController.AimingMouseSensitivity;
         }
         
-        // 计算sp
+        // 计算实际的屏幕空间位置
         _screenPosition += _thisMouseDeltaPosition;
+        // 不要超出屏幕
+        _screenPosition.x = Mathf.Clamp(_screenPosition.x, 0, screenSize.x);
+        _screenPosition.y = Mathf.Clamp(_screenPosition.y, 0, screenSize.y);
         
         
         // 转换到世界空间位置
@@ -69,6 +72,11 @@ public class FrontSightController : MonoBehaviour
         transform.position = new Vector3(tempP.x, tempP.y, 0);
         
         playerAircraftController.SetTargetPosition(transform.position);
+    }
+
+    public Vector2 GetScreenPosition()
+    {
+        return _screenPosition;
     }
 }
     

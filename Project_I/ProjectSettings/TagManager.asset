@@ -18,12 +18,12 @@ TagManager:
   - EnemyBullet
   - Ground
   - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - foreLayer0
+  - foreLayer1
+  - backLayer0
+  - backLayer1
+  - backLayer2
+  - backLayer3
   - 
   - 
   - 

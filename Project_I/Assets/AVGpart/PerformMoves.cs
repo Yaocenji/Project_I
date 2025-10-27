@@ -284,11 +284,13 @@ namespace Project_I.AVGpart
         private float t;
         // 已经打出的字数
         private int n;
+        private int oldN;
 
         public PerformMove_TextTypewritter(string targetText, TextMeshProUGUI textUI, float singleWordTime = 0.15f):base()
         {
             t = 0;
             n = 0;
+            oldN = 0;
             this.targetText = targetText;
             this.textUI = textUI;
             this.singleWordTime = singleWordTime;
@@ -298,7 +300,11 @@ namespace Project_I.AVGpart
         {
             t += deltaTime;
             n = (int)(t / singleWordTime);
-            textUI.text = targetText.Substring(0, Mathf.Min(n, targetText.Length));
+            if (n != oldN)
+            {
+                oldN = n;
+                textUI.text = targetText.Substring(0, Mathf.Min(n, targetText.Length));
+            }
             if (n >= targetText.Length)
             {
                 Finish();
