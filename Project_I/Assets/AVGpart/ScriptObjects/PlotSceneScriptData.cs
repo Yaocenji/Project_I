@@ -10,7 +10,7 @@ namespace Project_I.AVGpart
         public string plotSceneFilePath;
     }
     
-    [CreateAssetMenu(fileName = "PlotScene_ACTs", menuName = "GameData_ScriptableObjects/PlotScene_ACTs")]
+    [CreateAssetMenu(fileName = "PlotScene_ACTs", menuName = "AvgSO/PlotScene_ACTs")]
     public class PlotSceneScriptData : ScriptableObject
     {
         public List<SinglePlotScriptData> scripts;

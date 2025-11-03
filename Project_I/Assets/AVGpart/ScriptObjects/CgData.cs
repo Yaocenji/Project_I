@@ -28,7 +28,7 @@ namespace Project_I.AVGpart
     }
     
     
-    [CreateAssetMenu(fileName = "CgData", menuName = "GameData_ScriptableObjects/CgData")]
+    [CreateAssetMenu(fileName = "CgData", menuName = "AvgSO/CgData")]
     public class CgData : ScriptableObject
     {
         [SerializeField]

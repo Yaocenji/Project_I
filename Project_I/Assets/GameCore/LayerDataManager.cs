@@ -11,30 +11,18 @@ public class LayerDataManager : MonoBehaviour
     public static LayerDataManager Instance;
     
     // 提前获取layer
-    [HideInInspector]
     public int playerLayer;
-    [HideInInspector]
     public int friendlyLayer;
-    [HideInInspector]
     public int enemyLayer;
-    [HideInInspector]
     public int friendlyBulletLayer;
-    [HideInInspector]
     public int enemyBulletLayer;
-    [HideInInspector]
     public int groundLayer;
 
-    [HideInInspector]
     public int playerLayerMask;
-    [HideInInspector]
     public int friendlyLayerMask;
-    [HideInInspector]
     public int enemyLayerMask;
-    [HideInInspector]
     public int friendlyBulletLayerMask;
-    [HideInInspector]
     public int enemyBulletLayerMask;
-    [HideInInspector]
     public int groundLayerMask;
     
     void Awake()

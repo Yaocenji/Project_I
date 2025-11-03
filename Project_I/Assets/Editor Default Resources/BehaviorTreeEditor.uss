@@ -1,0 +1,65 @@
+/* 文件: Editor/Resources/BehaviorTreeEditor.uss */
+
+.node-base {
+}
+
+.composite {
+    background-color: rgb(63, 76, 102);
+}
+
+.decorator {
+    background-color: rgb(34, 88, 81);
+}
+
+.action {
+    background-color: rgb(110, 48, 48);
+}
+
+.condition {
+    background-color: rgb(141, 120, 52);
+}
+
+Node {
+    width: 200px;
+}
+
+.root {
+    border-color: rgb(255, 255, 255);
+    border-width: 4px;
+}
+
+Node {
+    width: 200px;
+}
+
+
+.parameter-row {
+    flex-direction: row;
+    align-items: center;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.parameter-key {
+    flex-grow: 1;
+    margin-right: 5px;
+}
+
+.parameter-value {
+    flex-grow: 1;
+}
+
+.parameter-remove-button {
+    min-width: 20px;
+    height: 20px;
+    padding: 0;
+    margin-left: 5px;
+    font-size: 10px;
+}
+
+.add-parameter-button {
+    margin-top: 5px;
+    margin-left: 10px;
+    margin-right: 10px;
+    height: 25px;
+}

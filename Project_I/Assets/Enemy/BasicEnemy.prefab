@@ -57,20 +57,40 @@ PrefabInstance:
       value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
-      propertyPath: engineF_1
-      value: 30
-      objectReference: {fileID: 0}
-    - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
-      propertyPath: maxRotateRatio
+      propertyPath: engineF_0
       value: 25
       objectReference: {fileID: 0}
     - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: engineF_1
+      value: 40
+      objectReference: {fileID: 0}
+    - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: engineF_2
+      value: 60
+      objectReference: {fileID: 0}
+    - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: maxRotateRatio
+      value: 42.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: minRotateRatio
-      value: 10
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: energyRetention
+      value: 0.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: rudderLockSpeed
+      value: 55
+      objectReference: {fileID: 0}
+    - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: horizonalStability
+      value: 0.05
       objectReference: {fileID: 0}
     - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: maxBestRotateSpeed
-      value: 17
+      value: 40
       objectReference: {fileID: 0}
     - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: minBestRotateSpeed
@@ -93,8 +113,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 4984204296922973415, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
-      insertIndex: -1
+      insertIndex: 3
       addedObject: {fileID: 4670668410498049319}
+    - targetCorrespondingSourceObject: {fileID: 4984204296922973415, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2804939488120674074}
   m_SourcePrefab: {fileID: 100100000, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
 --- !u!1 &8141616446919884976 stripped
 GameObject:
@@ -114,3 +137,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   hp: 30
+  sight: 20
+  state: 0
+--- !u!114 &2804939488120674074
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8141616446919884976}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0c68bf492ebf4d48a704cd7e8a92dd6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enemy: {fileID: 4670668410498049319}
+  interval: 0.3

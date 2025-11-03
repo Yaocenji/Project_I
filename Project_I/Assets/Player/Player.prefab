@@ -5002,16 +5002,24 @@ PrefabInstance:
       value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: engineF_0
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: engineF_1
-      value: 25.5
+      value: 35
+      objectReference: {fileID: 0}
+    - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: engineF_2
+      value: 75
       objectReference: {fileID: 0}
     - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: maxRotateRatio
-      value: 30
+      value: 47.5
       objectReference: {fileID: 0}
     - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: minRotateRatio
-      value: 7.5
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: rudderLockSpeed
@@ -5093,7 +5101,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   aimingCameraDistance: 25
   aimingCameraSize: 25
-  aimingMouseSensitivity: 0.5
+  aimingMouseSensitivity: 1
   aimingTimeScale: 1
   gunBullet: {fileID: 3944650675118432336, guid: 9340f7aca2f9381488eb27c0dafc1778, type: 3}
   gunColdTime: 0.05
@@ -5113,7 +5121,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   aimingCameraDistance: 25
   aimingCameraSize: 25
-  aimingMouseSensitivity: 0.5
+  aimingMouseSensitivity: 1
   aimingTimeScale: 0.5
   smallBomb: {fileID: 3944650675118432336, guid: a7d6b524b7e25754a9e15d317180ac77, type: 3}
   aimingSightPrefab: {fileID: 2673231601570944089, guid: 8d258bb95648177499ffd659f86b7c01, type: 3}

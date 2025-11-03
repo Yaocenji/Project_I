@@ -27,7 +27,7 @@ namespace Project_I.AVGpart
         public BackgroundIllustrationsInfo  IlluList;
     }
     
-    [CreateAssetMenu(fileName = "BackgroundData", menuName = "GameData_ScriptableObjects/BackgroundData")]
+    [CreateAssetMenu(fileName = "BackgroundData", menuName = "AvgSO/BackgroundData")]
     public class BackgroundData : ScriptableObject
     {
         [SerializeField]

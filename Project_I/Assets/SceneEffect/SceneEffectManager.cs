@@ -10,8 +10,11 @@ public class SceneEffectManager : MonoBehaviour
 {
     public static SceneEffectManager Instance;
 
-    [Header("实际地图尺寸（左下角坐标+宽高）")]
-    public Vector4 orignalMapLayerAABB = new Vector4(-128, -128, 256, 256);
+    /*public float MapLayerRect.z = 1200;
+    public float MapLayerRect.w = 900;*/
+
+    [Header("实际地图尺寸（中心位置+宽高）")]
+    public Vector4 MapLayerRect =  new Vector4(0, 0, 2500, 1440);
 
     [Serializable]
     public class LayerData
@@ -32,6 +35,8 @@ public class SceneEffectManager : MonoBehaviour
 
     private void Start()
     {
+        //MapLayerRect = new Vector4(MapLayerRect.x - MapLayerRect.z * 0.5f, MapLayerRect.y - MapLayerRect.w * 0.5f, MapLayerRect.z, MapLayerRect.w);
+        
         // 初始化layer的scale
         foreach (var layer in Enumerable.Concat(foreLayerData, backLayerData))
         {
@@ -44,15 +49,14 @@ public class SceneEffectManager : MonoBehaviour
         // 玩家世界空间位置
         Vector2 playerPos = GameSceneManager.Instance.player.transform.position;
         // 玩家相对游戏地图AABB的相对位置
-        Vector2 playerPosRelative = playerPos - (Vector2)orignalMapLayerAABB;
+        Vector2 playerPosRelative = playerPos - (Vector2)MapLayerRect;
         // 玩家在游戏地图AABB中的比例位置
-        Vector2 playerPosProportion = playerPosRelative / new Vector2(orignalMapLayerAABB.z, orignalMapLayerAABB.w);
+        //Vector2 playerPosProportion = playerPosRelative / new Vector2(MapLayerRect.z, MapLayerRect.w);
         // 设置对应位置
         foreach (var layer in Enumerable.Concat(foreLayerData, backLayerData))
         {
-            Vector2 currForeLayerPosRelative = playerPosRelative * layer.scale;
-            layer.layerGameObject.transform.position = playerPos - currForeLayerPosRelative
-                                    + layer.scale * new Vector2(orignalMapLayerAABB.z,  orignalMapLayerAABB.w) / 2.0f;
+            Vector2 currLayerPosRelative = playerPosRelative * layer.scale;
+            layer.layerGameObject.transform.position = playerPos - currLayerPosRelative;
         }
         
         //Debug.Log(playerPosProportion);
@@ -63,26 +67,26 @@ public class SceneEffectManager : MonoBehaviour
         Gizmos.color = Color.magenta;
         
         // draw top line
-        Gizmos.DrawLine(new Vector3(orignalMapLayerAABB.x, orignalMapLayerAABB.y), 
-                        new Vector3(orignalMapLayerAABB.x + orignalMapLayerAABB.z, 
-                                    orignalMapLayerAABB.y));
+        Gizmos.DrawLine(new Vector3(MapLayerRect.x - MapLayerRect.z * 0.5f, MapLayerRect.y - MapLayerRect.w * 0.5f), 
+                        new Vector3(MapLayerRect.x - MapLayerRect.z * 0.5f + MapLayerRect.z, 
+                                    MapLayerRect.y - MapLayerRect.w * 0.5f));
         
         // draw bottom line
-        Gizmos.DrawLine(new Vector3(orignalMapLayerAABB.x, 
-                                    orignalMapLayerAABB.y + orignalMapLayerAABB.w), 
-                        new Vector3(orignalMapLayerAABB.x + orignalMapLayerAABB.z, 
-                                    orignalMapLayerAABB.y + orignalMapLayerAABB.w));
+        Gizmos.DrawLine(new Vector3(MapLayerRect.x - MapLayerRect.z * 0.5f, 
+                                    MapLayerRect.y - MapLayerRect.w * 0.5f + MapLayerRect.w), 
+                        new Vector3(MapLayerRect.x - MapLayerRect.z * 0.5f + MapLayerRect.z, 
+                                    MapLayerRect.y - MapLayerRect.w * 0.5f + MapLayerRect.w));
         
         // draw right line
-        Gizmos.DrawLine(new Vector3(orignalMapLayerAABB.x + orignalMapLayerAABB.z, 
-                                    orignalMapLayerAABB.y),
-                        new Vector3(orignalMapLayerAABB.x + orignalMapLayerAABB.z, 
-                                    orignalMapLayerAABB.y + orignalMapLayerAABB.w));
+        Gizmos.DrawLine(new Vector3(MapLayerRect.x - MapLayerRect.z * 0.5f + MapLayerRect.z, 
+                                    MapLayerRect.y - MapLayerRect.w * 0.5f),
+                        new Vector3(MapLayerRect.x - MapLayerRect.z * 0.5f + MapLayerRect.z, 
+                                    MapLayerRect.y - MapLayerRect.w * 0.5f + MapLayerRect.w));
         
         // draw left line
-        Gizmos.DrawLine(new Vector3(orignalMapLayerAABB.x, orignalMapLayerAABB.y),
-                        new Vector3(orignalMapLayerAABB.x, 
-                            orignalMapLayerAABB.y + orignalMapLayerAABB.w));
+        Gizmos.DrawLine(new Vector3(MapLayerRect.x - MapLayerRect.z * 0.5f, MapLayerRect.y - MapLayerRect.w * 0.5f),
+                        new Vector3(MapLayerRect.x - MapLayerRect.z * 0.5f, 
+                            MapLayerRect.y - MapLayerRect.w * 0.5f + MapLayerRect.w));
         
     }
 }

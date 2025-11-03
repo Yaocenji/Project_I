@@ -63,7 +63,7 @@ namespace Project_I.AVGpart
         public CharacterIllustrationsInfo  IlluList;
     }
     
-    [CreateAssetMenu(fileName = "CharacterData", menuName = "GameData_ScriptableObjects/CharacterData")]
+    [CreateAssetMenu(fileName = "CharacterData", menuName = "AvgSO/CharacterData")]
     public class CharacterData : ScriptableObject
     {
         [SerializeField]

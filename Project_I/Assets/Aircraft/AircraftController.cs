@@ -159,10 +159,13 @@ public class AircraftController : MonoBehaviour
 
             angularVelocity += 0.2f;
             
-            _rigidbody2D.MoveRotation(Quaternion.Euler(0, 0, transform.rotation.eulerAngles.z + angularVelocity));
-            // transform.rotation = Quaternion.Euler(0, 0, transform.rotation.eulerAngles.z + angularVelocity);
-            
-            //transform.rotation = Quaternion.Euler(0, 0, transform.rotation.eulerAngles.z + Mathf.Sign(deltaAngle) * currMaxAngularVelocity * fixedFrameTime);
+            // 旋转
+            if (Mathf.Abs(transform.rotation.eulerAngles.z + angularVelocity) > Mathf.Epsilon)
+                _rigidbody2D.MoveRotation(Quaternion.Euler(0, 0, transform.rotation.eulerAngles.z + angularVelocity));
+            else
+            {
+                // 当旋转值等于零的时候，啥也不干，否则错误
+            }
         }
         
         // 水平安定与存能

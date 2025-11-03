@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b07e19215343433099ffa461820717fe, type: 3}
+  m_Name: Enemy0BehaviorTreeSO
+  m_EditorClassIdentifier: 
+  rootNode:
+    typeName: "\u4FEE\u9970|\u9006\u53D8\u5668"
+    children:
+    - typeName: "\u7EC4\u5408|\u9009\u62E9\u5668"
+      children:
+      - typeName: "\u7EC4\u5408|\u5E8F\u5217\u5668"
+        children: []
+        guid: 653b7a9ff21694243a5b048d383a2a48
+        position: {x: 71.333244, y: 517.355}
+      guid: aa4ec0fa4f7264d40b38218581bc0f53
+      position: {x: 123.33338, y: 283.29166}
+    guid: fe1d0a61e6947a74592ba24ccb4e6959
+    position: {x: 123.59674, y: 91.99499}
+  nodes:
+  - typeName: "\u4FEE\u9970|\u9006\u53D8\u5668"
+    children:
+    - typeName: "\u7EC4\u5408|\u9009\u62E9\u5668"
+      children:
+      - typeName: "\u7EC4\u5408|\u5E8F\u5217\u5668"
+        children: []
+        guid: 653b7a9ff21694243a5b048d383a2a48
+        position: {x: 71.333244, y: 517.355}
+      guid: aa4ec0fa4f7264d40b38218581bc0f53
+      position: {x: 123.33338, y: 283.29166}
+    guid: fe1d0a61e6947a74592ba24ccb4e6959
+    position: {x: 123.59674, y: 91.99499}
+  - typeName: "\u7EC4\u5408|\u9009\u62E9\u5668"
+    children:
+    - typeName: "\u7EC4\u5408|\u5E8F\u5217\u5668"
+      children: []
+      guid: 653b7a9ff21694243a5b048d383a2a48
+      position: {x: 71.333244, y: 517.355}
+    guid: aa4ec0fa4f7264d40b38218581bc0f53
+    position: {x: 123.33338, y: 283.29166}
+  - typeName: "\u7EC4\u5408|\u5E8F\u5217\u5668"
+    children: []
+    guid: 653b7a9ff21694243a5b048d383a2a48
+    position: {x: 71.333244, y: 517.355}

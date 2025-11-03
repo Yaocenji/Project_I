@@ -13,7 +13,7 @@ namespace Project_I.AVGpart
         public AudioClip  sound;
     }
     
-    [CreateAssetMenu(fileName = "SoundData", menuName = "GameData_ScriptableObjects/SoundData")]
+    [CreateAssetMenu(fileName = "SoundData", menuName = "AvgSO/SoundData")]
     public class SoundData : ScriptableObject
     {
         [SerializeField]
