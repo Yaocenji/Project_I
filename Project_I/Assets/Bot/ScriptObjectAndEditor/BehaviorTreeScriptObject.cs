@@ -118,8 +118,7 @@ namespace Project_I.Bot
         [HideInInspector] public string guid; // 添加GUID
         [HideInInspector] public Vector2 position; // 记录编辑器中位置
         
-        public Dictionary<string, string> parameters; // 节点参数(可选)
-        
+        public Dictionary<string, string> parameters = new Dictionary<string, string>(); // 节点参数(可选)
         
         // 所有类的中文别名
         private static string[] AllNodesTypes

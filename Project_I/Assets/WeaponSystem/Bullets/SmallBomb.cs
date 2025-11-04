@@ -47,7 +47,7 @@ public class SmallBomb : BasicBullet
             // 对爆炸范围内的所有目标都施加伤害
             foreach (var enemy in _sputterController.sputterEnemies)
             {
-                enemy.Hit(damage);
+                enemy.GetComponent<UnitHPController>().Hit(damage);
             }
         }
         Destroy(gameObject);

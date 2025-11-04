@@ -20,13 +20,11 @@ namespace Project_I
     {
         private AircraftController aircraftController;
         
-        [LabelText("血量")]
-        public float hp = 30f;
         [LabelText("视线长度")]
         public float sight = 20.0f;
         
         // 当前状态
-        public EnemyState state;
+        //public EnemyState state;
 
         [NonSerialized]
         public Vector2 targetPos;
@@ -44,6 +42,7 @@ namespace Project_I
             // 要获取的组件
             aircraftController = GetComponent<AircraftController>();
             targetPos = Vector2.zero;
+            
         }
 
         private void Update()
@@ -58,25 +57,22 @@ namespace Project_I
             {
                 aircraftController.SetTargetPosition(targetPos);
                 aircraftController.StartStandardThrust();
+                
+                var ejector = GetComponent<EjectorController>();
+                ejector.SwitchEjector(0);
+                ejector.BeginEject();
+                
+                
                 inited = true;
             }
             
-            // 可能的死亡
-            if (hp <= 0)
-            {
-                Die();
-            }
         }
 
-        public void Hit(float dmg)
-        {
-            hp -= dmg;
-        }
-
-        private void Die()
+        public void Die()
         {
             Destroy(gameObject);
         }
+        
         private void OnTriggerEnter2D(Collider2D other)
         {
         }

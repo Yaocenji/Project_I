@@ -19,10 +19,27 @@ namespace Project_I.Bot
     {
         public BehaviorTree tree;
         
-        protected NodeStatus status;
+        public NodeStatus status;
+        
+        protected BasicEnemy enemy;
+        protected Transform transform;
 
-        public string nodeName = "abcNode";
+        //public string nodeName = "abcNode";
+        
         public abstract NodeStatus Tick();
+        
+        // --- 新增: 初始化方法 ---
+        public virtual void Initialize(BasicEnemy ownerEnemy, Transform ownerTransform, Dictionary<string, string> parameters)
+        {
+            this.enemy = ownerEnemy;
+            this.transform = ownerTransform;
+        }
+    
+        // --- 新增: 设置子节点的方法 ---
+        public virtual void SetChildren(List<BehaviorTreeNode> newChildren)
+        {
+            // 基类不做任何事，由组合节点重写
+        }
     }
 
     // 组合节点：序列器
@@ -32,9 +49,16 @@ namespace Project_I.Bot
     {
         public List<BehaviorTreeNode> children = new List<BehaviorTreeNode>();
 
+        
+        public SequenceNode() { } // 需要无参构造函数
         public SequenceNode(List<BehaviorTreeNode> children)
         {
             this.children = children;
+        }
+        
+        public override void SetChildren(List<BehaviorTreeNode> newChildren)
+        {
+            this.children = newChildren;
         }
 
         public override NodeStatus Tick()
@@ -76,6 +100,11 @@ namespace Project_I.Bot
             this.children = children;
         }
 
+        public override void SetChildren(List<BehaviorTreeNode> newChildren)
+        {
+            this.children = newChildren;
+        }
+
         public override NodeStatus Tick()
         {
             foreach (var node in children)
@@ -113,6 +142,12 @@ namespace Project_I.Bot
         public ParallelNode(List<BehaviorTreeNode> children)
         {
             this.children = children;
+        }
+        
+        
+        public override void SetChildren(List<BehaviorTreeNode> newChildren)
+        {
+            this.children = newChildren;
         }
 
         public override NodeStatus Tick()
@@ -153,6 +188,14 @@ namespace Project_I.Bot
         private int loops;
         private int currentCount;
 
+        public LoopNode()
+        {
+            child = null;
+            loops = 1;
+            infinity = true;
+            currentCount = 0;
+        }
+        
         public LoopNode(bool infinity, int loops = 1)
         {
             this.child = null;
@@ -178,6 +221,14 @@ namespace Project_I.Bot
             this.loops = loops;
             this.infinity = infinity;
             this.currentCount = 0;
+        }
+        
+        public override void SetChildren(List<BehaviorTreeNode> newChildren)
+        {
+            if (newChildren != null && newChildren.Count > 0)
+            {
+                this.child = newChildren[0];
+            }
         }
 
         public override NodeStatus Tick()
@@ -239,6 +290,14 @@ namespace Project_I.Bot
         {
             this.child = null;
         }
+        
+        public override void SetChildren(List<BehaviorTreeNode> newChildren)
+        {
+            if (newChildren != null && newChildren.Count > 0)
+            {
+                this.child = newChildren[0];
+            }
+        }
 
         public override NodeStatus Tick()
         {
@@ -298,6 +357,11 @@ namespace Project_I.Bot
                 isFirstFrame = false;
             }
             status = Check() ? NodeStatus.SUCCESS : NodeStatus.FAILURE;
+            
+            // 成功了就去掉初始化
+            if (status == NodeStatus.SUCCESS)
+                isFirstFrame = true;
+            
             return status;
         }
 

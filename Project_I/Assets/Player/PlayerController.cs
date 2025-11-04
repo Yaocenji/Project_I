@@ -59,6 +59,12 @@ public class PlayerController : MonoBehaviour
         ejectorController = GetComponent<EjectorController>();
     }
 
+    public void Die()
+    {
+        // TODO
+        Debug.Log("玩家死了");
+    }
+
     void Update()
     {
         // _mousePositionWs = mainCamera.ScreenToWorldPoint(_playerInput.Player.MousePosition.ReadValue<Vector2>());

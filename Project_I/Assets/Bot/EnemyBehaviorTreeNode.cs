@@ -10,7 +10,6 @@ namespace Project_I.Bot
     [NodeChildLimit(0)]
     public class IfSeePlayer : ConditionNode
     {
-        private BasicEnemy enemy;
         private Transform playerTransform;
         // 需要连续成功几次才成功？
         private int number;
@@ -18,13 +17,26 @@ namespace Project_I.Bot
         // 最近的几次射线检测
         private bool[] recentCheck;
 
-        public IfSeePlayer(Transform playerTransform, BasicEnemy enemy, int number):base()
+        // --- 无参构造函数 ---
+        public IfSeePlayer() : base() { }
+
+        // --- 重写 Initialize 方法来解析参数 ---
+        public override void Initialize(BasicEnemy ownerEnemy, Transform ownerTransform, Dictionary<string, string> parameters)
         {
-            this.playerTransform = playerTransform;
-            this.enemy = enemy;
-            this.number = number;
+            base.Initialize(ownerEnemy, ownerTransform, parameters);
             
-            recentCheck = new bool[number];
+            playerTransform = GameSceneManager.Instance.player.transform;
+
+            // 从字典中安全地读取 "number" 参数
+            if (parameters.TryGetValue("number", out string numberValue))
+            {
+                int.TryParse(numberValue, out this.number);
+            }
+            
+            // 如果参数不存在或解析失败，给一个默认值
+            if (this.number <= 0) this.number = 5;
+
+            recentCheck = new bool[this.number];
             for (int i = 0; i < number; i++)
             {
                 recentCheck[i] = false;
@@ -34,11 +46,11 @@ namespace Project_I.Bot
         protected override bool Check()
         {
             // 通过发射射线检测；
-            Transform playerTransform = GameSceneManager.Instance.player.transform;
+            //Transform playerTransform = GameSceneManager.Instance.player.transform;
             // 玩家方向
-            Vector2 playerDirection = (playerTransform.position - this.playerTransform.position).normalized;
+            Vector2 playerDirection = (playerTransform.position - this.transform.position).normalized;
             // 二维射线检测
-            RaycastHit2D hit2D = Physics2D.Raycast(this.playerTransform.position, playerDirection, 
+            RaycastHit2D hit2D = Physics2D.Raycast(this.transform.position, playerDirection, 
                 enemy.sight, LayerDataManager.Instance.groundLayerMask | LayerDataManager.Instance.playerLayerMask);
             
             bool thisANS = false;
@@ -64,6 +76,11 @@ namespace Project_I.Bot
                 }
             }
             
+            /*if (thisANS)
+                Debug.Log("射线检测：成功");
+            else
+                Debug.Log("射线检测：失败");*/
+            
             // 近期数据整体前移
             for (int i = 0; i < number - 1; i++)
             {
@@ -80,7 +97,7 @@ namespace Project_I.Bot
                     return false;
                 }
             }
-            Debug.Log("成功");
+            // ("成功看到玩家");
             return true;
         }
     }
@@ -90,10 +107,30 @@ namespace Project_I.Bot
     [NodeChildLimit(0)]
     public class IfPlayerInAttackRadius : ConditionNode
     {
-        private BasicEnemy enemy;
         private Transform playerTransform;
         private float radius;
 
+        // --- 移除构造函数参数 ---
+        public IfPlayerInAttackRadius() : base() { }
+
+        // --- 重写 Initialize 方法来解析参数 ---
+        public override void Initialize(BasicEnemy ownerEnemy, Transform ownerTransform, Dictionary<string, string> parameters)
+        {
+            base.Initialize(ownerEnemy, ownerTransform, parameters);
+            
+            playerTransform = GameSceneManager.Instance.player.transform;
+
+            // 从字典中安全地读取 "number" 参数
+            if (parameters.TryGetValue("radius", out string radiusValue))
+            {
+                float.TryParse(radiusValue, out this.radius);
+            }
+            
+            // 如果参数不存在或解析失败，给一个默认值
+            if (this.radius <= 0) this.radius = 7.5f;
+
+        }
+        
         public IfPlayerInAttackRadius(Transform playerTransform, BasicEnemy enemy, float radius):base()
         {
             this.playerTransform = playerTransform;
@@ -104,6 +141,10 @@ namespace Project_I.Bot
         protected override bool Check()
         {
             float dist = Vector2.Distance(playerTransform.position, this.playerTransform.position);
+            
+            /*if (dist <= this.radius)
+                Debug.Log("在玩家附近的一定范围内");*/
+            
             return dist <= radius;
         }
     }
@@ -120,6 +161,8 @@ namespace Project_I.Bot
             UseTemporalTickInterval = false;
             
             tree.enemy.BeginTracePlayer(this);
+            
+            // Debug.Log("开始追踪玩家");
         }
 
         protected override bool Check()
@@ -130,6 +173,7 @@ namespace Project_I.Bot
         public void SetTraceEnd()
         {
             traceFinished = true;
+            // Debug.Log("结束追踪玩家");
         }
     }
 }

@@ -10,7 +10,7 @@ namespace Project_I.Bot
     {
         [Header("行为树配置文件")]
         [Tooltip("指定此敌人使用的行为树 ScriptableObject 配置。")]
-        public BehaviorTreeConfig config;
+        public BehaviorTreeConfig treeConfig;
         
         [Header("当前敌人脚本")]
         public BasicEnemy enemy;
@@ -24,6 +24,9 @@ namespace Project_I.Bot
         private float lastTime;
         
         private BehaviorTreeNode root;
+        
+        // 用于记录所有节点
+        private List<BehaviorTreeNode> nodesList = new List<BehaviorTreeNode>();
         
         
         // 用于缓存节点显示名称到具体Type的映射，避免运行时重复反射，提高性能
@@ -41,11 +44,20 @@ namespace Project_I.Bot
             // 计算当前已经过时间除以决策间隔，并于已决策次数比较，若不等说明少一次决策
             if ( Time.time - lastTime > (useTemporalInterval ? temporalInterval : interval) )
             {
+                NodeStatus ans = NodeStatus.FAILURE;
                 // 进行一次决策
                 if (root != null)
                 {
-                    root.Tick();
+                    ans = root.Tick();
                 }
+                
+                // 如果ans为正
+                if (ans == NodeStatus.SUCCESS)
+                {
+                    // 那么全部刷成Failure
+                    SetAllStatusRunning();
+                }
+                
                 // 更新上一Tick发生时间
                 lastTime = Time.time;
                 
@@ -56,146 +68,82 @@ namespace Project_I.Bot
             }
         }
 
+        private void SetAllStatusRunning()
+        {
+            foreach (BehaviorTreeNode node in nodesList)
+                node.status =  NodeStatus.RUNNING;
+        }
+
+        
+        // --- 重写 SetupTree 方法 ---
         protected virtual BehaviorTreeNode SetupTree()
         {
-            /*BehaviorTreeNode rootNode = new InvertNode();
-            rootNode.tree = this;
-            
-            // cast
-            InvertNode realRoot = rootNode as InvertNode;
-            realRoot.tree = this;
-            realRoot.child = new IfSeePlayer(transform, enemy, 5);
-
-            
-            // Debug
-            var currType = Type.GetType("Project_I.Bot.InvertNode");
-            if (currType != null)
+            if (treeConfig == null || treeConfig.rootNode == null)
             {
-                var thisNode = Activator.CreateInstance(currType);
-                Debug.Log(thisNode.GetType().ToString());
-            }
-            
-            return rootNode;*/
-            
-            // 检查配置文件是否已分配
-            if (config is null)
-            {
-                Debug.LogError("行为树配置文件 (BehaviorTreeConfig) 未在 Inspector 中指定！", this);
+                Debug.LogError("行为树配置为空!", this);
                 return null;
             }
 
-            // 检查根节点是否存在
-            if (config.rootNode is null)
+            var nodeMap = BehaviorNodeUtils.GetNodeDisplayNameMap();
+            Dictionary<string, BehaviorTreeNode> createdNodes = new Dictionary<string, BehaviorTreeNode>();
+            
+            // 递归创建所有节点
+            return CreateNodeRecursive(treeConfig.rootNode, nodeMap, createdNodes);
+        }
+
+        private BehaviorTreeNode CreateNodeRecursive(BehaviorNodeConfig config, Dictionary<string, string> nameMap, Dictionary<string, BehaviorTreeNode> createdNodes)
+        {
+            if (config == null) return null;
+            if (createdNodes.ContainsKey(config.guid)) return createdNodes[config.guid];
+            
+            if (!nameMap.TryGetValue(config.typeName, out string fullTypeName))
             {
-                Debug.LogError("指定的行为树配置文件中没有根节点 (rootNode)！", this);
+                Debug.LogError($"找不到节点类型: {config.typeName}");
                 return null;
             }
 
-            // 初始化节点类型缓存
-            InitializeNodeTypeCache();
+            Type type = Type.GetType(fullTypeName);
+            if (type == null)
+            {
+                Debug.LogError($"无法从类型名创建类型: {fullTypeName}");
+                return null;
+            }
 
-            // 从配置文件的根节点开始，递归地创建整个行为树
-            return CreateNodeRecursive(config.rootNode);
+            // 使用 Activator.CreateInstance 创建节点实例
+            // 我们将使用一个无参构造函数，然后通过一个方法来初始化参数
+            BehaviorTreeNode node = Activator.CreateInstance(type) as BehaviorTreeNode;
+            node.tree = this;
+            
+            if (node == null)
+            {
+                Debug.LogError($"创建节点实例失败: {type.Name}");
+                return null;
+            }
+
+            // --- 传递参数和上下文 ---
+            node.Initialize(enemy, transform, config.parameters);
+            createdNodes.Add(config.guid, node);
+            
+            // --- 递归创建并连接子节点 ---
+            if (config.children != null && config.children.Any())
+            {
+                List<BehaviorTreeNode> childNodes = new List<BehaviorTreeNode>();
+                foreach (var childConfig in config.children)
+                {
+                    childNodes.Add(CreateNodeRecursive(childConfig, nameMap, createdNodes));
+                }
+                node.SetChildren(childNodes);
+            }
+
+            // 记录一下所有的node
+            if (node is not null)
+            {
+                nodesList.Add(node);
+            }
+
+            return node;
         }
         
-        
-        /// <summary>
-        /// 初始化节点名称到Type的映射缓存
-        /// </summary>
-        private void InitializeNodeTypeCache()
-        {
-            nodeTypeCache = new Dictionary<string, Type>();
-            // 从工具类获取所有 "显示名称" -> "完整类名" 的映射
-            var displayNameMap = BehaviorNodeUtils.GetNodeDisplayNameMap();
-            foreach (var pair in displayNameMap)
-            {
-                // 使用 Type.GetType 获取对应的类定义
-                Type type = Type.GetType(pair.Value);
-                if (type != null)
-                {
-                    nodeTypeCache[pair.Key] = type;
-                }
-                else
-                {
-                    Debug.LogWarning($"无法找到节点类型: {pair.Value}");
-                }
-            }
-        }
-
-        /// <summary>
-        /// 递归地创建行为树节点实例
-        /// </summary>
-        /// <param name="nodeConfig">节点的配置数据</param>
-        /// <returns>创建好的节点运行时实例</returns>
-        private BehaviorTreeNode CreateNodeRecursive(BehaviorNodeConfig nodeConfig)
-        {
-            if (nodeConfig == null) return null;
-
-            // 从缓存中查找节点类型
-            if (!nodeTypeCache.TryGetValue(nodeConfig.typeName, out Type nodeType))
-            {
-                Debug.LogError($"未知的节点类型: '{nodeConfig.typeName}'");
-                return null;
-            }
-
-            BehaviorTreeNode instance;
-
-            // --- 特殊节点处理 ---
-            // 对于构造函数需要特定参数(如transform, enemy)的节点，需要在此处特殊处理。
-            // 这是一个可以扩展的地方，例如可以将参数也序列化到 BehaviorNodeConfig 中。
-            // 目前，我们根据你原始代码的例子来硬编码处理 IfSeePlayer。
-            if (nodeType == typeof(IfSeePlayer))
-            {
-                // 假设 'number' 参数为5，如同你原始的硬编码。
-                // 更好的做法是将 '5' 这个值也保存在 BehaviorNodeConfig 中。
-                instance = new IfSeePlayer(transform, enemy, 5);
-            }
-            else
-            {
-                // 对于其他所有节点，我们尝试使用无参构造函数创建实例
-                instance = Activator.CreateInstance(nodeType) as BehaviorTreeNode;
-            }
-
-            if (instance == null)
-            {
-                Debug.LogError($"无法创建节点实例: '{nodeConfig.typeName}'");
-                return null;
-            }
-
-            // 为创建的节点设置其所属的行为树
-            instance.tree = this;
-
-            // --- 递归处理子节点 ---
-            if (nodeConfig.children != null && nodeConfig.children.Count > 0)
-            {
-                // 组合节点 (有 children 列表)
-                if (instance is SequenceNode seq)
-                {
-                    nodeConfig.children.ForEach(childConfig => seq.children.Add(CreateNodeRecursive(childConfig)));
-                }
-                else if (instance is SelectNode sel)
-                {
-                    nodeConfig.children.ForEach(childConfig => sel.children.Add(CreateNodeRecursive(childConfig)));
-                }
-                else if (instance is ParallelNode par)
-                {
-                    nodeConfig.children.ForEach(childConfig => par.children.Add(CreateNodeRecursive(childConfig)));
-                }
-                // 修饰节点 (只有单个 child)
-                else if (instance is InvertNode inv)
-                {
-                    inv.child = CreateNodeRecursive(nodeConfig.children.FirstOrDefault());
-                }
-                else if (instance is LoopNode loop)
-                {
-                    // 注意：LoopNode 的循环次数等参数也未在Config中序列化，此处会使用默认值。
-                    loop.child = CreateNodeRecursive(nodeConfig.children.FirstOrDefault());
-                }
-            }
-
-            return instance;
-        }
-
 
         public void SetTemporalInterval(float interval)
         {

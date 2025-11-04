@@ -59,9 +59,22 @@ namespace Project_I.Bot
 
         private void OnDisable()
         {
-            if (_graphView != null)
+            /*if (_graphView != null)
             {
                 rootVisualElement.Remove(_graphView);
+            }*/
+            
+            // --- THE CRITICAL FIX IS HERE ---
+            // When the window is closed, we must clean up everything.
+            if (_graphView != null)
+            {
+                // 1. Remove the graph view from the window's visual tree.
+                rootVisualElement.Remove(_graphView);
+
+                // 2. IMPORTANT: Null out our reference to the graph view.
+                // This ensures that OnEnable will start with a completely
+                // fresh state and prevents any old event listeners from lingering.
+                _graphView = null;
             }
         }
     }
@@ -88,34 +101,29 @@ namespace Project_I.Bot
         {
             _treeConfig = config;
 
-            graphViewChanged -= OnGraphViewChanged;
-            DeleteElements(graphElements);
-            graphViewChanged += OnGraphViewChanged;
+            // --- BUGFIX: 采用更健壮的事件处理方式 ---
+            // 1. 在进行任何操作之前，先彻底清空所有旧的事件处理函数。
+            //    这可以防止任何从上一个窗口会话中残留的"僵尸"订阅。
+            graphViewChanged = null; 
 
-            // BUGFIX 1: 处理使用旧数据结构的资产 (nodes列表为空但rootNode有数据)
-            // 如果这是一个旧资产，我们需要遍历它的子节点并填充到新的nodes列表中。
+            // 2. 删除所有旧的UI元素。因为我们已经清空了事件，所以这个操作不会触发任何回调。
+            DeleteElements(graphElements);
+            // ---------------------------------------------
+
+            // (处理旧资产和新资产的逻辑保持不变)
             if (_treeConfig.nodes.Count == 0 && _treeConfig.rootNode != null)
             {
-                // 使用递归函数从rootNode开始收集所有节点
                 CollectNodesRecursively(_treeConfig.rootNode, _treeConfig.nodes);
-                EditorUtility.SetDirty(_treeConfig); // 保存升级后的数据
+                EditorUtility.SetDirty(_treeConfig);
             }
-
-            // BUGFIX 2: 处理全新的、完全空白的资产
-            // 如果在升级后，节点列表仍然为空，为用户创建一个默认的根节点。
             if (_treeConfig.nodes.Count == 0)
             {
-                // 创建一个节点，CreateNode方法会自动将其设为rootNode并添加到nodes列表
-                _treeConfig.CreateNode("组合|序列器"); 
+                _treeConfig.CreateNode("组合|序列器");
                 EditorUtility.SetDirty(_treeConfig);
             }
             
-            // --- 原始逻辑开始 ---
-
-            // 1. 创建所有节点的视图 (现在nodes列表肯定有数据了)
             _treeConfig.nodes.ForEach(CreateNodeView);
 
-            // 2. 创建所有节点之间的连线
             _treeConfig.nodes.ForEach(nodeConfig =>
             {
                 var parentView = FindNodeView(nodeConfig);
@@ -129,6 +137,11 @@ namespace Project_I.Bot
                     }
                 });
             });
+            
+            // --- BUGFIX: 在所有UI都构建完毕后，再重新订阅事件处理函数 ---
+            // 这样可以确保只有用户之后的操作才会触发它。
+            graphViewChanged += OnGraphViewChanged;
+            // ---------------------------------------------
         }
         
         /// <summary>
@@ -187,7 +200,10 @@ namespace Project_I.Bot
             }
             
             // 标记资产为已修改状态
-            EditorUtility.SetDirty(_treeConfig);
+            // REMOVED: EditorUtility.SetDirty(_treeConfig);
+            // This call is redundant because the DeleteNode, AddChild, etc.
+            // methods inside BehaviorTreeConfig already call SetDirty.
+            // EditorUtility.SetDirty(_treeConfig);
             
             return graphViewChange;
         }
@@ -239,6 +255,8 @@ namespace Project_I.Bot
             var nodeView = new BehaviorTreeNodeView(nodeConfig, GetMaxChildrenForNode(nodeConfig.typeName));
             nodeView.SetPosition(new Rect(nodeConfig.position, new Vector2(200, 150)));
             
+            nodeView.userData = _treeConfig;
+            
             // 检查并设置根节点样式
             if (_treeConfig.rootNode == nodeConfig)
             {
@@ -270,11 +288,16 @@ namespace Project_I.Bot
         public Port OutputPort { get; private set; }
         public Action OnNodeConfigMoved;
 
+        // 用于存放参数UI的容器
+        private VisualElement parametersContainer;
+        
         public BehaviorTreeNodeView(BehaviorNodeConfig config, int maxChildren) : base()
         {
             this.NodeConfig = config;
             this.title = config.typeName.Split('|').Last();
             this.viewDataKey = config.guid;
+            
+            style.width = 250; // 让节点宽一点以容纳参数
             
             string styleClass = GetStyleClass(config.typeName);
             AddToClassList(styleClass);
@@ -293,7 +316,68 @@ namespace Project_I.Bot
                 OutputPort.portName = "Out";
                 outputContainer.Add(OutputPort);
             }
+            
+            
+            // --- 新增: 初始化并绘制参数UI ---
+            parametersContainer = new VisualElement();
+            mainContainer.Add(parametersContainer);
+            
+            var addButton = new Button(() => {
+                string newKey = $"Param{NodeConfig.parameters.Count + 1}";
+                if (!NodeConfig.parameters.ContainsKey(newKey))
+                {
+                    NodeConfig.parameters.Add(newKey, "default_value");
+                    DrawParametersUI(); // 重新绘制
+                }
+            }) { text = "添加参数" };
+            mainContainer.Add(addButton);
+
+            DrawParametersUI();
         }
+        
+        
+        // --- 新增: 绘制参数UI的方法 ---
+        private void DrawParametersUI()
+        {
+            parametersContainer.Clear();
+
+            var toRemove = new List<string>();
+
+            foreach (var param in NodeConfig.parameters)
+            {
+                var row = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center } };
+
+                var keyField = new TextField { value = param.Key, style = { width = 100 } };
+                var valueField = new TextField { value = param.Value, style = { flexGrow = 1 } };
+                var removeButton = new Button(() => {
+                    toRemove.Add(param.Key);
+                }) { text = "X", style = { width = 20, height = 20 } };
+
+                // 当值改变时更新字典
+                // 注意: 直接修改字典key很复杂，通常不推荐。这里我们只允许修改value。
+                valueField.RegisterValueChangedCallback(evt => {
+                    NodeConfig.parameters[param.Key] = evt.newValue;
+                    EditorUtility.SetDirty((UnityEngine.Object)this.userData); // 标记资产已修改
+                });
+
+                row.Add(keyField);
+                row.Add(valueField);
+                row.Add(removeButton);
+                parametersContainer.Add(row);
+            }
+
+            // 延迟移除，避免在遍历时修改集合
+            if (toRemove.Any())
+            {
+                foreach (var key in toRemove)
+                {
+                    NodeConfig.parameters.Remove(key);
+                }
+                DrawParametersUI(); // 再次重绘以反映删除
+            }
+        }
+        
+        
         
         public void UpdateRootStyle()
         {

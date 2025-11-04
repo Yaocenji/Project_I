@@ -138,7 +138,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hp: 30
   sight: 20
-  state: 0
 --- !u!114 &2804939488120674074
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -151,5 +150,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a0c68bf492ebf4d48a704cd7e8a92dd6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  treeConfig: {fileID: 0}
   enemy: {fileID: 4670668410498049319}
   interval: 0.3
