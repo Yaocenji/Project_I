@@ -9,8 +9,8 @@ public class SputterController : MonoBehaviour
 {
     private CircleCollider2D _collider2D;
     
-    private List<BasicEnemy> _sputterEnemies;
-    public List<BasicEnemy> sputterEnemies
+    private List<NpcBehaviorController> _sputterEnemies;
+    public List<NpcBehaviorController> sputterEnemies
     {
         get => _sputterEnemies;
     }
@@ -20,7 +20,7 @@ public class SputterController : MonoBehaviour
         _collider2D = GetComponent<CircleCollider2D>();
         _collider2D.radius = transform.parent.GetComponent<SmallBomb>().sputterRadius;
         
-        _sputterEnemies = new List<BasicEnemy>();
+        _sputterEnemies = new List<NpcBehaviorController>();
     }
 
     // Update is called once per frame
@@ -33,7 +33,7 @@ public class SputterController : MonoBehaviour
     {
         if (other is not null && other.gameObject.layer == LayerDataManager.Instance.enemyLayer)
         {
-            _sputterEnemies.Add(other.gameObject.GetComponent<BasicEnemy>());
+            _sputterEnemies.Add(other.gameObject.GetComponent<NpcBehaviorController>());
         }
     }
     
@@ -41,7 +41,7 @@ public class SputterController : MonoBehaviour
     {
         if (other is not null && other.gameObject.layer == LayerDataManager.Instance.enemyLayer)
         {
-            _sputterEnemies.Remove(other.gameObject.GetComponent<BasicEnemy>());
+            _sputterEnemies.Remove(other.gameObject.GetComponent<NpcBehaviorController>());
         }
     }
 }

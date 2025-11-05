@@ -21,17 +21,15 @@ namespace Project_I.Bot
         
         public NodeStatus status;
         
-        protected BasicEnemy enemy;
+        protected NpcBehaviorController NpcBehaviorController;
         protected Transform transform;
-
-        //public string nodeName = "abcNode";
         
         public abstract NodeStatus Tick();
         
         // --- 新增: 初始化方法 ---
-        public virtual void Initialize(BasicEnemy ownerEnemy, Transform ownerTransform, Dictionary<string, string> parameters)
+        public virtual void Initialize(NpcBehaviorController ownerNpcBehaviorController, Transform ownerTransform, Dictionary<string, string> parameters)
         {
-            this.enemy = ownerEnemy;
+            this.NpcBehaviorController = ownerNpcBehaviorController;
             this.transform = ownerTransform;
         }
     

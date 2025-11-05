@@ -5,12 +5,12 @@ using UnityEngine;
 
 namespace Project_I.Bot
 {
-    // 检测当前敌人是否能看到具备玩家视野
-    [NodeName("条件|能否看见玩家")]
+    // 检测当前敌人是否能看到具备潜在目标的视野
+    [NodeName("条件|能否看见潜在目标")]
     [NodeChildLimit(0)]
-    public class IfSeePlayer : ConditionNode
+    public class IfSeeLatentTarget : ConditionNode
     {
-        private Transform playerTransform;
+        private HashSet<Transform> latentTargetTransforms = new HashSet<Transform>();
         // 需要连续成功几次才成功？
         private int number;
         
@@ -18,14 +18,15 @@ namespace Project_I.Bot
         private bool[] recentCheck;
 
         // --- 无参构造函数 ---
-        public IfSeePlayer() : base() { }
+        public IfSeeLatentTarget() : base() { }
 
         // --- 重写 Initialize 方法来解析参数 ---
-        public override void Initialize(BasicEnemy ownerEnemy, Transform ownerTransform, Dictionary<string, string> parameters)
+        public override void Initialize(NpcBehaviorController ownerNpcBehaviorController, Transform ownerTransform, Dictionary<string, string> parameters)
         {
-            base.Initialize(ownerEnemy, ownerTransform, parameters);
+            base.Initialize(ownerNpcBehaviorController, ownerTransform, parameters);
             
-            playerTransform = GameSceneManager.Instance.player.transform;
+            // 设置潜在的transform目标
+            latentTargetTransforms = GameSceneManager.Instance.Player.transform;
 
             // 从字典中安全地读取 "number" 参数
             if (parameters.TryGetValue("number", out string numberValue))
@@ -48,10 +49,10 @@ namespace Project_I.Bot
             // 通过发射射线检测；
             //Transform playerTransform = GameSceneManager.Instance.player.transform;
             // 玩家方向
-            Vector2 playerDirection = (playerTransform.position - this.transform.position).normalized;
+            Vector2 playerDirection = (latentTargetTransforms.position - this.transform.position).normalized;
             // 二维射线检测
             RaycastHit2D hit2D = Physics2D.Raycast(this.transform.position, playerDirection, 
-                enemy.sight, LayerDataManager.Instance.groundLayerMask | LayerDataManager.Instance.playerLayerMask);
+                NpcBehaviorController.sight, LayerDataManager.Instance.groundLayerMask | LayerDataManager.Instance.playerLayerMask);
             
             bool thisANS = false;
             
@@ -65,7 +66,7 @@ namespace Project_I.Bot
             else
             {
                 // 能直接看到玩家。
-                if (hit2D.collider.gameObject == GameSceneManager.Instance.player.gameObject)
+                if (hit2D.collider.gameObject == GameSceneManager.Instance.Player.gameObject)
                 {
                     thisANS = true;
                 }
@@ -105,20 +106,20 @@ namespace Project_I.Bot
     // 检测当前敌人是否能看到具备玩家视野
     [NodeName("条件|玩家是否在一定范围内")]
     [NodeChildLimit(0)]
-    public class IfPlayerInAttackRadius : ConditionNode
+    public class IfPursueTargetInAttackRadius : ConditionNode
     {
         private Transform playerTransform;
         private float radius;
 
         // --- 移除构造函数参数 ---
-        public IfPlayerInAttackRadius() : base() { }
+        public IfPursueTargetInAttackRadius() : base() { }
 
         // --- 重写 Initialize 方法来解析参数 ---
-        public override void Initialize(BasicEnemy ownerEnemy, Transform ownerTransform, Dictionary<string, string> parameters)
+        public override void Initialize(NpcBehaviorController ownerNpcBehaviorController, Transform ownerTransform, Dictionary<string, string> parameters)
         {
-            base.Initialize(ownerEnemy, ownerTransform, parameters);
+            base.Initialize(ownerNpcBehaviorController, ownerTransform, parameters);
             
-            playerTransform = GameSceneManager.Instance.player.transform;
+            playerTransform = GameSceneManager.Instance.Player.transform;
 
             // 从字典中安全地读取 "number" 参数
             if (parameters.TryGetValue("radius", out string radiusValue))
@@ -131,10 +132,10 @@ namespace Project_I.Bot
 
         }
         
-        public IfPlayerInAttackRadius(Transform playerTransform, BasicEnemy enemy, float radius):base()
+        public IfPursueTargetInAttackRadius(Transform playerTransform, NpcBehaviorController npcBehaviorController, float radius):base()
         {
             this.playerTransform = playerTransform;
-            this.enemy = enemy;
+            this.NpcBehaviorController = npcBehaviorController;
             this.radius = radius;
         }
         
@@ -160,9 +161,9 @@ namespace Project_I.Bot
             traceFinished = false;
             UseTemporalTickInterval = false;
             
-            tree.enemy.BeginTracePlayer(this);
+            tree.npcBehaviorController.BeginTraceAnother(this, GameSceneManager.Instance.Player);
             
-            // Debug.Log("开始追踪玩家");
+            Debug.Log("开始追踪玩家");
         }
 
         protected override bool Check()
@@ -173,7 +174,23 @@ namespace Project_I.Bot
         public void SetTraceEnd()
         {
             traceFinished = true;
-            // Debug.Log("结束追踪玩家");
+            Debug.Log("结束追踪玩家");
+        }
+    }
+    
+    // 向玩家开火
+    [NodeName("动作|向玩家开火")]
+    [NodeChildLimit(0)]
+    public class FireToPlayer : ActionNode
+    {
+        protected override void Start()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        protected override bool Check()
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

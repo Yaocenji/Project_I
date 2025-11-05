@@ -27,9 +27,9 @@ public class FrontSightController : MonoBehaviour
     void Start()
     {
         mainCamera = GameSceneManager.Instance.mainCamera;
-        playerController = GameSceneManager.Instance.player.GetComponent<PlayerController>();
-        playerEjectorController = GameSceneManager.Instance.player.GetComponent<EjectorController>();
-        playerAircraftController = GameSceneManager.Instance.player.GetComponent<AircraftController>();
+        playerController = GameSceneManager.Instance.Player.GetComponent<PlayerController>();
+        playerEjectorController = GameSceneManager.Instance.Player.GetComponent<EjectorController>();
+        playerAircraftController = GameSceneManager.Instance.Player.GetComponent<AircraftController>();
         
         screenSize = new Vector2(Screen.width,  Screen.height); 
         

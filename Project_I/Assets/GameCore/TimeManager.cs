@@ -27,7 +27,7 @@ public class TimeManager : MonoBehaviour
     private void Start()
     {
         Time.timeScale = 1;
-        playerEjectorController = GameSceneManager.Instance.player.GetComponent<EjectorController>();
+        playerEjectorController = GameSceneManager.Instance.Player.GetComponent<EjectorController>();
     }
 
     private void Update()

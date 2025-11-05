@@ -47,7 +47,7 @@ public class SceneEffectManager : MonoBehaviour
     void Update()
     {
         // 玩家世界空间位置
-        Vector2 playerPos = GameSceneManager.Instance.player.transform.position;
+        Vector2 playerPos = GameSceneManager.Instance.Player.transform.position;
         // 玩家相对游戏地图AABB的相对位置
         Vector2 playerPosRelative = playerPos - (Vector2)MapLayerRect;
         // 玩家在游戏地图AABB中的比例位置

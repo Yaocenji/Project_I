@@ -35,14 +35,14 @@ public class BasicBullet : MonoBehaviour
             (other.gameObject.layer == LayerDataManager.Instance.playerLayer /*||
              other.gameObject.layer == LayerDataManager.Instance.friendlyLayer*/))
         {
-            GameSceneManager.Instance.player.GetComponent<UnitHPController>().Hit(damage);
+            GameSceneManager.Instance.Player.GetComponent<UnitHPController>().Hit(damage);
         }
         
         // 友方子弹撞到敌人
         if (gameObject.layer == LayerDataManager.Instance.friendlyBulletLayer &&
             other.gameObject.layer == LayerDataManager.Instance.enemyLayer)
         {
-            other.gameObject.GetComponent<BasicEnemy>().GetComponent<UnitHPController>().Hit(damage);
+            other.gameObject.GetComponent<NpcBehaviorController>().GetComponent<UnitHPController>().Hit(damage);
         }
         
         Destroy(gameObject);

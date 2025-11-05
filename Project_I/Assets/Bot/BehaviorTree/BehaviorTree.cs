@@ -2,19 +2,21 @@ using System;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using Sirenix.OdinInspector;
+using UnityEngine.Serialization;
 
 namespace Project_I.Bot
 {
     // 行为树
     public class BehaviorTree : MonoBehaviour
     {
-        [Header("行为树配置文件")]
+        [LabelText("行为树配置文件")]
         [Tooltip("指定此敌人使用的行为树 ScriptableObject 配置。")]
         public BehaviorTreeConfig treeConfig;
         
-        [Header("当前敌人脚本")]
-        public BasicEnemy enemy;
-        [Header("决策间隔（频率）")]
+        [LabelText("当前NPC控制脚本")]
+        public NpcBehaviorController npcBehaviorController;
+        [LabelText("决策间隔（频率）")]
         public float interval = 0.3f;
         
         // 有些动作节点结束的时候，会改用一次临时interval
@@ -121,7 +123,7 @@ namespace Project_I.Bot
             }
 
             // --- 传递参数和上下文 ---
-            node.Initialize(enemy, transform, config.parameters);
+            node.Initialize(npcBehaviorController, transform, config.parameters);
             createdNodes.Add(config.guid, node);
             
             // --- 递归创建并连接子节点 ---

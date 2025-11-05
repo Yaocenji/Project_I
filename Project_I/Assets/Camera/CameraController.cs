@@ -38,9 +38,9 @@ public class CameraController : MonoBehaviour
         rawCameraSize = cam.orthographicSize;
         
         // 要用到的场景中的其他脚本，通过GameSceneManager获取
-        playerTransform = GameSceneManager.Instance.player.transform;
-        playerEjectorController = GameSceneManager.Instance.player.GetComponent<EjectorController>();
-        playerAircraftController = GameSceneManager.Instance.player.GetComponent<AircraftController>();
+        playerTransform = GameSceneManager.Instance.Player.transform;
+        playerEjectorController = GameSceneManager.Instance.Player.GetComponent<EjectorController>();
+        playerAircraftController = GameSceneManager.Instance.Player.GetComponent<AircraftController>();
     }
 
     void FixedUpdate()

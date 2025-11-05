@@ -15,16 +15,6 @@ public class LearnNavMesh : MonoBehaviour
         //agent = GetComponent<NavMeshAgent>();
         if (target is not null)
         {
-            /*// 验证目标点是否在导航网格上
-            if (NavMesh.SamplePosition(target.position, out NavMeshHit hit, 1.0f, NavMesh.AllAreas))
-            {
-                agent.SetDestination(hit.position);
-            }
-            else
-            {
-                Debug.LogError("目标点不在导航网格上！");
-            }*/
-
             NavMeshHit hit;
             NavMesh.SamplePosition(target.position, out hit, 1.0f, NavMesh.AllAreas);
             NavMeshPath path = new NavMeshPath();
@@ -47,5 +37,16 @@ public class LearnNavMesh : MonoBehaviour
     // Update is called once per frame
     private void Update()
     {
+        if (target is not null)
+        {
+            NavMeshHit hit;
+            NavMesh.SamplePosition(target.position, out hit, 1.0f, NavMesh.AllAreas);
+            NavMeshPath path = new NavMeshPath();
+            if (NavMesh.CalculatePath(transform.position, hit.position, NavMesh.AllAreas, path))
+            {
+                Vector3[] corners = path.corners;
+                currentPath = new List<Vector3>(corners);
+            }
+        }
     }
 }

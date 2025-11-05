@@ -16,19 +16,24 @@ public class GameSceneManager : MonoBehaviour
     }
 
     private GameObject _player;
-    public GameObject player { get => _player; }
+    public GameObject Player { get => _player; }
 
-    private List<GameObject> _enemy;
-    public List<GameObject> enemy { get => _enemy; }
+
+    private HashSet<GameObject> _fiend;
+    public HashSet<GameObject> Friend { get => _fiend; }
+
+    private HashSet<GameObject> _enemy;
+    public HashSet<GameObject> Enemy { get => _enemy; }
 
     private GameObject _frontSight;
-    public GameObject frontSight { get => _frontSight; }
+    public GameObject FrontSight { get => _frontSight; }
 
     private void Awake()
     {
         Instance = this;
 
-        _enemy = new List<GameObject>();
+        _fiend = new HashSet<GameObject>();
+        _enemy = new HashSet<GameObject>();
     }
     
     // 注册主摄像机
@@ -41,12 +46,18 @@ public class GameSceneManager : MonoBehaviour
     }
 
     // 注册玩家
-    public bool RegisterPlayer(GameObject go)
+    public bool RegisterPlayer(GameObject pl)
     {
         if (_player is not null)
             return false;
-        _player = go;
+        _player = pl;
         return true;
+    }
+    
+    // 注册友军
+    public void RegisterFriend(GameObject ff)
+    {
+        ff.AddComponent<GameSceneManager>();
     }
     
     // 注册敌人

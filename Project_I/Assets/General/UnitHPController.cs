@@ -11,12 +11,12 @@ public class UnitHPController : MonoBehaviour
 
     /*[LabelText("玩家单位")]*/ private PlayerController player;
     // TODO 友方单位
-    /*[LabelText("敌方单位")]*/ private BasicEnemy enemy;
+    /*[LabelText("敌方单位")]*/ private NpcBehaviorController npcBehaviorController;
 
     private void Start()
     {
         player = GetComponent<PlayerController>();
-        enemy = GetComponent<BasicEnemy>();
+        npcBehaviorController = GetComponent<NpcBehaviorController>();
     }
 
     public void Hit(float damage)
@@ -38,7 +38,7 @@ public class UnitHPController : MonoBehaviour
 
         // TODO 友方单位
         
-        if (enemy is not null)
-            enemy.Die();
+        if (npcBehaviorController is not null)
+            npcBehaviorController.Die();
     }
 }
