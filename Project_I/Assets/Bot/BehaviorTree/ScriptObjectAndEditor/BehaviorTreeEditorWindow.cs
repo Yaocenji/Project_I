@@ -244,7 +244,7 @@ namespace Project_I.Bot
 
         private void CreateNode(string nodeName, Vector2 position)
         {
-            if (_treeConfig == null) return;
+            if (_treeConfig is null) return;
             var nodeConfig = _treeConfig.CreateNode(nodeName); // 使用config中的方法创建
             nodeConfig.position = position;
             CreateNodeView(nodeConfig);
@@ -324,11 +324,13 @@ namespace Project_I.Bot
             
             var addButton = new Button(() => {
                 string newKey = $"Param{NodeConfig.parameters.Count + 1}";
-                if (!NodeConfig.parameters.ContainsKey(newKey))
+                foreach (var param in NodeConfig.parameters)
                 {
-                    NodeConfig.parameters.Add(newKey, "default_value");
-                    DrawParametersUI(); // 重新绘制
+                    if (param.Key == newKey)
+                        return;
                 }
+                NodeConfig.parameters.Add(new BehaviorNodeParameter(newKey, "default_value"));
+                DrawParametersUI(); // 重新绘制
             }) { text = "添加参数" };
             mainContainer.Add(addButton);
 
@@ -356,7 +358,14 @@ namespace Project_I.Bot
                 // 当值改变时更新字典
                 // 注意: 直接修改字典key很复杂，通常不推荐。这里我们只允许修改value。
                 valueField.RegisterValueChangedCallback(evt => {
-                    NodeConfig.parameters[param.Key] = evt.newValue;
+                    for (int i = 0; i < NodeConfig.parameters.Count; i++)
+                    {
+                        if (NodeConfig.parameters[i].Key == param.Key)
+                        {
+                            NodeConfig.parameters[i] = new BehaviorNodeParameter(NodeConfig.parameters[i].Key, evt.newValue);
+                        }
+                    }
+                    // NodeConfig.parameters[param.Key] = evt.newValue;
                     EditorUtility.SetDirty((UnityEngine.Object)this.userData); // 标记资产已修改
                 });
 
@@ -369,9 +378,15 @@ namespace Project_I.Bot
             // 延迟移除，避免在遍历时修改集合
             if (toRemove.Any())
             {
+                List<int> toRemoveIdxs = new List<int>();
                 foreach (var key in toRemove)
                 {
-                    NodeConfig.parameters.Remove(key);
+                    toRemoveIdxs.Add(NodeConfig.parameters.FindIndex(param => param.Key == key));
+                }
+
+                foreach (var idx in toRemoveIdxs)
+                {
+                    NodeConfig.parameters.RemoveAt(idx);
                 }
                 DrawParametersUI(); // 再次重绘以反映删除
             }

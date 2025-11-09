@@ -85,7 +85,7 @@ public class GunAndCannonEjector : BasicEjector
 
     public override Vector2 AimingCameraPos(Vector2 aircraftPos, Vector2 mouseTargetPos, Vector2 targetAircraftPos)
     {
-        return aircraftPos + (mouseTargetPos - aircraftPos).normalized * aimingCameraDistance / 2.0f;
+        return aircraftPos + (mouseTargetPos - aircraftPos).normalized * aimingCameraDistance / 3.0f;
     }
 
     public override void Test()

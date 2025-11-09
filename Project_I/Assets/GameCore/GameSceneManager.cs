@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 namespace Project_I
 {
+    
 public class GameSceneManager : MonoBehaviour
 {
     public static GameSceneManager Instance;
@@ -15,7 +17,7 @@ public class GameSceneManager : MonoBehaviour
         get => _mainCamera;
     }
 
-    private GameObject _player;
+    public GameObject _player;
     public GameObject Player { get => _player; }
 
 
@@ -27,11 +29,20 @@ public class GameSceneManager : MonoBehaviour
 
     private GameObject _frontSight;
     public GameObject FrontSight { get => _frontSight; }
+    
+    
+    // A队伍的transform合集
+    public HashSet<Transform> PartyATransforms;
+    // B队伍的transform合集
+    public HashSet<Transform> PartyBTransforms;
 
     private void Awake()
     {
         Instance = this;
 
+        PartyATransforms = new HashSet<Transform>();
+        PartyBTransforms = new HashSet<Transform>();
+        
         _fiend = new HashSet<GameObject>();
         _enemy = new HashSet<GameObject>();
     }
@@ -50,20 +61,36 @@ public class GameSceneManager : MonoBehaviour
     {
         if (_player is not null)
             return false;
-        _player = pl;
-        return true;
+        
+        if (pl.layer == LayerDataManager.Instance.playerLayer)
+        {
+            _player = pl;
+            PartyATransforms.Add(pl.transform);
+            return true;
+        }
+
+        return false;
     }
     
     // 注册友军
     public void RegisterFriend(GameObject ff)
     {
-        ff.AddComponent<GameSceneManager>();
+        if (ff.layer == LayerDataManager.Instance.friendlyLayer)
+        {
+            ff.AddComponent<GameSceneManager>();
+            PartyATransforms.Add(ff.transform);
+        }
     }
     
     // 注册敌人
     public void RegisterEnemy(GameObject en)
     {
-        _enemy.Add(en);
+        if (en.layer == LayerDataManager.Instance.enemyLayer)
+        {
+            _enemy.Add(en);
+            PartyBTransforms.Add(en.transform);
+            EventSystem.EventBus.Publish(new EventSystem.EnemyRegisteredEvent(en));
+        }
     }
     
     // 注册准星
@@ -73,6 +100,26 @@ public class GameSceneManager : MonoBehaviour
             return false;
         _frontSight = fs;
         return true;
+    }
+    
+    // 友方单位死亡
+    public void DieFriend(GameObject ff)
+    {
+        if (_fiend.Contains(ff))
+        {
+            _fiend.Remove(ff);
+            PartyATransforms.Remove(ff.transform);
+        }
+    }
+    // 敌方单位死亡
+    public void DieEnemy(GameObject en)
+    {
+        if (_enemy.Contains(en))
+        {
+            _enemy.Remove(en);
+            PartyBTransforms.Remove(en.transform);
+            EventSystem.EventBus.Publish(new EventSystem.EnemyDiedEvent(en));
+        }
     }
     
 }

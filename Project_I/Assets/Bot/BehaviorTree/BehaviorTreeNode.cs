@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 
@@ -27,16 +28,47 @@ namespace Project_I.Bot
         public abstract NodeStatus Tick();
         
         // --- 新增: 初始化方法 ---
-        public virtual void Initialize(NpcBehaviorController ownerNpcBehaviorController, Transform ownerTransform, Dictionary<string, string> parameters)
+        public virtual void Initialize(NpcBehaviorController ownerNpcBehaviorController, Transform ownerTransform, List<BehaviorNodeParameter> parameters)
         {
             this.NpcBehaviorController = ownerNpcBehaviorController;
             this.transform = ownerTransform;
+
+            /*
+            if (parameters.Any())
+            {
+                Debug.Log("参数列表不为空");
+                foreach (var parameter in parameters)
+                {
+                    Debug.Log(parameter.Key + ": " + parameter.Value);
+                }
+            }
+            */
         }
     
         // --- 新增: 设置子节点的方法 ---
         public virtual void SetChildren(List<BehaviorTreeNode> newChildren)
         {
             // 基类不做任何事，由组合节点重写
+        }
+        
+        // 静态方法：从参数列表中寻找想要的参数
+        public static bool FindParameterAsString(in String paramName, out String getParam, ref List<BehaviorNodeParameter> parameters)
+        {
+            if (!parameters.Any())
+            {
+                getParam = "";
+                return false;
+            }
+            foreach (var param in parameters)
+            {
+                if (param.Key == paramName)
+                {
+                    getParam = param.Value;
+                    return true;
+                }
+            }
+            getParam = "";
+            return false;
         }
     }
 

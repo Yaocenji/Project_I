@@ -5003,7 +5003,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: engineF_0
-      value: 20
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: engineF_1
@@ -5011,15 +5011,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: engineF_2
-      value: 75
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: maxRotateRatio
-      value: 47.5
+      value: 67.5
       objectReference: {fileID: 0}
     - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: minRotateRatio
-      value: 15
+      value: 35.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: energyRetention
+      value: 0.9
       objectReference: {fileID: 0}
     - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: rudderLockSpeed
@@ -5032,6 +5036,10 @@ PrefabInstance:
     - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: minBestRotateSpeed
       value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: maxChangePerSecondEngineF
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 6712319792098207423, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_Color.b
@@ -5099,14 +5107,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d981ece1d0e6aa94c88f96b804a81f82, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  aimingCameraDistance: 25
-  aimingCameraSize: 25
+  aimingCameraDistance: 16
+  aimingCameraSize: 16
   aimingMouseSensitivity: 1
   aimingTimeScale: 1
   gunBullet: {fileID: 3944650675118432336, guid: 9340f7aca2f9381488eb27c0dafc1778, type: 3}
   gunColdTime: 0.05
   speed: 100
-  sigma: 2.5
+  sigma: 3.5
 --- !u!114 &3905397144771315387
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5119,8 +5127,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7639dd9d82ab9024f8a94feaace10410, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  aimingCameraDistance: 25
-  aimingCameraSize: 25
+  aimingCameraDistance: 16
+  aimingCameraSize: 16
   aimingMouseSensitivity: 1
   aimingTimeScale: 0.5
   smallBomb: {fileID: 3944650675118432336, guid: a7d6b524b7e25754a9e15d317180ac77, type: 3}

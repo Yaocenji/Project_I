@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Project_I.Bot;
 using Sirenix.OdinInspector;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -20,6 +21,7 @@ namespace Project_I
     public class NpcBehaviorController : MonoBehaviour
     {
         private AircraftController aircraftController;
+        private bool inited = false;
         
         [LabelText("视线长度")]
         public float sight = 100.0f;
@@ -27,9 +29,10 @@ namespace Project_I
         [LabelText("攻击长度")]
         public float attackDistance = 30.0f;
         
-        // 当前状态
+        [LabelText("当前状态")]
         public BotState state;
 
+        
         [NonSerialized]
         // 当前的用于Aircraft的目标点
         public Vector2 targetPos;
@@ -41,15 +44,14 @@ namespace Project_I
         [NonSerialized]
         // 巡逻的目标点
         public Vector2 patrolPos;
-
-        private bool inited = false;
+        
+        // 以下是行为树BlackBoard
+        [NonSerialized]
+        public Transform targetUnitTransform;
         
         //Debug用：
         private List<Vector2> debugPath;
 
-        private void Awake()
-        {
-        }
 
         private void Start()
         {
@@ -82,63 +84,53 @@ namespace Project_I
                 
                 var ejector = GetComponent<EjectorController>();
                 ejector.SwitchEjector(0);
-                ejector.BeginEject();
+                // ejector.BeginEject();
                 
                 
                 inited = true;
             }
             
         }
-
-        public void Die()
-        {
-            Destroy(gameObject);
-        }
         
-        private void OnTriggerEnter2D(Collider2D other)
-        {
-        }
-        
-        // 动作：追踪玩家
-        public void BeginTraceAnother(Bot.TracePlayer btNode, GameObject target)
+        // 追踪目标的携程
+        public IEnumerator TraceTargetOnce(TraceTarget btNode)
         {
             state = BotState.Pursue;
-            StartCoroutine("TracePlayerOnce", btNode);
-        }
-        
-        // 追踪玩家的携程
-        public IEnumerator TracePlayerOnce(Bot.TracePlayer btNode/*, GameObject target*/)
-        {
+            
             // 追踪的时长
-            float TraceTime = 2.5f;
+            float traceTime = 2.5f;
             // 追踪判定的次数
-            int TraceCount = 10;
+            int traceCount = 10;
             
             // 根据上面两个值，计算出携程的一次等待间隔时间
-            float Interval = TraceTime / (float)TraceCount;
+            float interval = traceTime / traceCount;
             
             // 不断遍历，设置新的目标点
-            for (int i = 0; i < TraceCount; i++)
+            for (int i = 0; i < traceCount; i++)
             {
                 
                 debugPath.Clear();
                 debugPath.Add(transform.position);
-                debugPath.Add(GameSceneManager.Instance.Player.transform.position);
                 
-                targetPos = GameSceneManager.Instance.Player.transform.position;
+                if (targetUnitTransform is not null)
+                {
+                    debugPath.Add(targetUnitTransform.position);
+
+                    targetPos = targetUnitTransform.transform.position;
+                }
                 
-                yield return new WaitForSeconds(Interval);
+                yield return new WaitForSeconds(interval);
             }
 
             // 结束时：
             state = BotState.Idle;
             targetPosDefault = new Vector2(transform.position.x, transform.position.y);
-            btNode.SetTraceEnd();
+            btNode.End();
         }
         
         
-        // 返回purchase位置
-        public IEnumerator GoBackToPurchasePos(Bot.TracePlayer btNode)
+        // 返回patrol位置
+        public IEnumerator GoBackTPatrolPos(TraceTarget btNode)
         {
             // 用于存储返回的路径
             List<Vector2> pathPos = new List<Vector2>();
@@ -167,7 +159,7 @@ namespace Project_I
             
             // 沿着路径移动
             // 协程更新间隔
-            float Interval = 0.1f;
+            float interval = 0.1f;
             // 当前的Idx
             int idx = 0;
             // 开始协程的迭代。
@@ -179,16 +171,120 @@ namespace Project_I
                     idx++;
                 }
                 
-                yield return new WaitForSeconds(Interval);
+                yield return new WaitForSeconds(interval);
             }
             
             // 迭代结束：该Bot到达了patrol position
         }
         
+        
+        // 开火
+        public IEnumerator FireToTargetOnce(FireToTarget btNode)
+        {
+            float time = btNode.fireTime;
+            int number = 10;
+            float interval = time / number;
+            
+            Debug.Log("interval: " + interval);
+            
+            state = BotState.Attack;
+            
+            // 获取ejector
+            var ejectorController = GetComponent<EjectorController>();
+            // 选择0号武器槽：枪炮
+            ejectorController.SwitchEjector(0);
+            // 发射
+            ejectorController.BeginEject();
+            
+            // 自己的rg
+            Rigidbody2D thisRg = GetComponent<Rigidbody2D>();
+            // 目标的rg
+            Rigidbody2D otherRg = targetUnitTransform.GetComponent<Rigidbody2D>();
+
+            for (int i = 0; i < number; i++)
+            {
+                /*
+                // 获得自己的速度
+                Vector2 thisVelocity = thisRg.velocity;
+                // 获取目标的速度
+                Vector2 otherVelocity = otherRg.velocity;
+                // 火控启动！
+                // 发射的子弹的弹速
+                Vector2 bulletVelocity = thisVelocity + btNode.bulletSpeed * thisVelocity.normalized;
+                // 淘宝火控
+                Vector2 thePreciseFirePos;
+                bool hasPreciseFirePos = GetLeadPosition(transform.position, bulletVelocity.magnitude,
+                    targetUnitTransform.position, otherVelocity, out thePreciseFirePos);
+                
+                
+                if (hasPreciseFirePos)
+                    targetPos = thePreciseFirePos;
+                else
+                    targetPos = targetUnitTransform.position;
+                */
+                Debug.Log("已启动淘宝火控" + i);
+                
+                targetPos = targetUnitTransform.position;
+
+                yield return new WaitForSeconds(interval);
+            }
+            
+            ejectorController.EndEject();
+            state = BotState.Patrol;
+            btNode.End();
+        }
+        /// <summary>
+        /// 计算提前量命中点。
+        /// 返回 true 表示有解，p 为预测命中位置。
+        /// </summary>
+        public static bool GetLeadPosition(
+            Vector2 Apos, float bulletSpeed,
+            Vector2 Bpos, Vector2 Bvel,
+            out Vector2 p)
+        {
+            Vector2 r = Bpos - Apos;
+            float a = Vector2.Dot(Bvel, Bvel) - bulletSpeed * bulletSpeed;
+            float b = 2f * Vector2.Dot(r, Bvel);
+            float c = Vector2.Dot(r, r);
+
+            float discriminant = b * b - 4f * a * c;
+
+            if (discriminant < 0f)
+            {
+                p = Vector2.zero;
+                return false; // 无解，追不上
+            }
+
+            float sqrt = Mathf.Sqrt(discriminant);
+
+            // 两个可能的时间
+            float t1 = (-b + sqrt) / (2f * a);
+            float t2 = (-b - sqrt) / (2f * a);
+
+            // 取最小的正时间
+            float t = Mathf.Min(t1, t2);
+            if (t < 0f)
+                t = Mathf.Max(t1, t2);
+
+            if (t < 0f)
+            {
+                p = Vector2.zero;
+                return false; // 目标在背后，无法命中
+            }
+
+            // 命中点
+            p = Bpos + Bvel * t;
+            return true;
+        }
+        
         void OnDrawGizmos()
         {
             if (debugPath == null) return;
-            Gizmos.color = Color.red;
+            
+            if (gameObject.layer == LayerDataManager.Instance.enemyLayer)
+                Gizmos.color = Color.red;
+            else
+                Gizmos.color = Color.green;
             for (int i = 0; i < debugPath.Count - 1; i++)
                 Gizmos.DrawLine(debugPath[i], debugPath[i + 1]);
         }

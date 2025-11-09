@@ -12,81 +12,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b07e19215343433099ffa461820717fe, type: 3}
   m_Name: Enemy0BehaviorTreeSO
   m_EditorClassIdentifier: 
+  serializationData:
+    SerializedFormat: 2
+    SerializedBytes: 
+    ReferencedUnityObjects: []
+    SerializedBytesString: 
+    Prefab: {fileID: 0}
+    PrefabModificationsReferencedUnityObjects: []
+    PrefabModifications: []
+    SerializationNodes: []
   rootNode:
     typeName: "\u4FEE\u9970|\u9006\u53D8\u5668"
     children:
     - typeName: "\u7EC4\u5408|\u9009\u62E9\u5668"
-      children:
-      - typeName: "\u7EC4\u5408|\u5E8F\u5217\u5668"
-        children:
-        - typeName: "\u6761\u4EF6|\u80FD\u5426\u770B\u89C1\u73A9\u5BB6"
-          children: []
-          guid: 234afc14ee2d786458c8f8a632465f79
-          position: {x: -254.49304, y: 642.8232}
-        - typeName: "\u52A8\u4F5C|\u8FFD\u8E2A\u73A9\u5BB6"
-          children: []
-          guid: 0ac87ba5ebc8d9d43a4dc379cc1336a0
-          position: {x: 154.14046, y: 642.6667}
-        guid: 7934faf8cb7081f469061ff029ebf762
-        position: {x: -75.02984, y: 457.2764}
-      guid: d5335f57471cb4f4fbc522012d3140fe
-      position: {x: 0.0000076293945, y: 189.24854}
+      children: []
+      guid: 
+      position: {x: 0, y: 0}
+      parameters: []
     guid: 
     position: {x: 0, y: 0}
-  nodes:
-  - typeName: "\u4FEE\u9970|\u9006\u53D8\u5668"
-    children:
-    - typeName: "\u7EC4\u5408|\u9009\u62E9\u5668"
-      children:
-      - typeName: "\u7EC4\u5408|\u5E8F\u5217\u5668"
-        children:
-        - typeName: "\u6761\u4EF6|\u80FD\u5426\u770B\u89C1\u73A9\u5BB6"
-          children: []
-          guid: 234afc14ee2d786458c8f8a632465f79
-          position: {x: -254.49304, y: 642.8232}
-        - typeName: "\u52A8\u4F5C|\u8FFD\u8E2A\u73A9\u5BB6"
-          children: []
-          guid: 0ac87ba5ebc8d9d43a4dc379cc1336a0
-          position: {x: 154.14046, y: 642.6667}
-        guid: 7934faf8cb7081f469061ff029ebf762
-        position: {x: -75.02984, y: 457.2764}
-      guid: d5335f57471cb4f4fbc522012d3140fe
-      position: {x: 0.0000076293945, y: 189.24854}
-    guid: 
-    position: {x: 0, y: 0}
-  - typeName: "\u7EC4\u5408|\u9009\u62E9\u5668"
-    children:
-    - typeName: "\u7EC4\u5408|\u5E8F\u5217\u5668"
-      children:
-      - typeName: "\u6761\u4EF6|\u80FD\u5426\u770B\u89C1\u73A9\u5BB6"
-        children: []
-        guid: 234afc14ee2d786458c8f8a632465f79
-        position: {x: -254.49304, y: 642.8232}
-      - typeName: "\u52A8\u4F5C|\u8FFD\u8E2A\u73A9\u5BB6"
-        children: []
-        guid: 0ac87ba5ebc8d9d43a4dc379cc1336a0
-        position: {x: 154.14046, y: 642.6667}
-      guid: 7934faf8cb7081f469061ff029ebf762
-      position: {x: -75.02984, y: 457.2764}
-    guid: d5335f57471cb4f4fbc522012d3140fe
-    position: {x: 0.0000076293945, y: 189.24854}
-  - typeName: "\u7EC4\u5408|\u5E8F\u5217\u5668"
-    children:
-    - typeName: "\u6761\u4EF6|\u80FD\u5426\u770B\u89C1\u73A9\u5BB6"
-      children: []
-      guid: 234afc14ee2d786458c8f8a632465f79
-      position: {x: -254.49304, y: 642.8232}
-    - typeName: "\u52A8\u4F5C|\u8FFD\u8E2A\u73A9\u5BB6"
-      children: []
-      guid: 0ac87ba5ebc8d9d43a4dc379cc1336a0
-      position: {x: 154.14046, y: 642.6667}
-    guid: 7934faf8cb7081f469061ff029ebf762
-    position: {x: -75.02984, y: 457.2764}
-  - typeName: "\u6761\u4EF6|\u80FD\u5426\u770B\u89C1\u73A9\u5BB6"
-    children: []
-    guid: 234afc14ee2d786458c8f8a632465f79
-    position: {x: -254.49304, y: 642.8232}
-  - typeName: "\u52A8\u4F5C|\u8FFD\u8E2A\u73A9\u5BB6"
-    children: []
-    guid: 0ac87ba5ebc8d9d43a4dc379cc1336a0
-    position: {x: 154.14046, y: 642.6667}
+    parameters: []
+  nodes: []

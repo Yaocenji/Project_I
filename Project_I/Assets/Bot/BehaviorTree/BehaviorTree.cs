@@ -80,23 +80,28 @@ namespace Project_I.Bot
         // --- 重写 SetupTree 方法 ---
         protected virtual BehaviorTreeNode SetupTree()
         {
-            if (treeConfig == null || treeConfig.rootNode == null)
+            if (treeConfig is null || treeConfig.rootNode is null)
             {
                 Debug.LogError("行为树配置为空!", this);
                 return null;
             }
 
             var nodeMap = BehaviorNodeUtils.GetNodeDisplayNameMap();
-            Dictionary<string, BehaviorTreeNode> createdNodes = new Dictionary<string, BehaviorTreeNode>();
+            HashSet<BehaviorTreeNode> createdNodes = new HashSet<BehaviorTreeNode>();
             
             // 递归创建所有节点
-            return CreateNodeRecursive(treeConfig.rootNode, nodeMap, createdNodes);
+            var ans = CreateNodeRecursive(treeConfig.rootNode, ref nodeMap, ref createdNodes);
+            
+            Debug.Log("创建行为树完成");
+
+            return ans;
         }
 
-        private BehaviorTreeNode CreateNodeRecursive(BehaviorNodeConfig config, Dictionary<string, string> nameMap, Dictionary<string, BehaviorTreeNode> createdNodes)
+        private BehaviorTreeNode CreateNodeRecursive(BehaviorNodeConfig config, ref Dictionary<string, string> nameMap, 
+            ref HashSet<BehaviorTreeNode> createdNodes)
         {
-            if (config == null) return null;
-            if (createdNodes.ContainsKey(config.guid)) return createdNodes[config.guid];
+            if (config == null)
+                return null;
             
             if (!nameMap.TryGetValue(config.typeName, out string fullTypeName))
             {
@@ -115,16 +120,11 @@ namespace Project_I.Bot
             // 我们将使用一个无参构造函数，然后通过一个方法来初始化参数
             BehaviorTreeNode node = Activator.CreateInstance(type) as BehaviorTreeNode;
             node.tree = this;
-            
-            if (node == null)
-            {
-                Debug.LogError($"创建节点实例失败: {type.Name}");
-                return null;
-            }
 
             // --- 传递参数和上下文 ---
+            //var realNode = node as type;
             node.Initialize(npcBehaviorController, transform, config.parameters);
-            createdNodes.Add(config.guid, node);
+            createdNodes.Add(node);
             
             // --- 递归创建并连接子节点 ---
             if (config.children != null && config.children.Any())
@@ -132,7 +132,7 @@ namespace Project_I.Bot
                 List<BehaviorTreeNode> childNodes = new List<BehaviorTreeNode>();
                 foreach (var childConfig in config.children)
                 {
-                    childNodes.Add(CreateNodeRecursive(childConfig, nameMap, createdNodes));
+                    childNodes.Add(CreateNodeRecursive(childConfig, ref nameMap, ref createdNodes));
                 }
                 node.SetChildren(childNodes);
             }

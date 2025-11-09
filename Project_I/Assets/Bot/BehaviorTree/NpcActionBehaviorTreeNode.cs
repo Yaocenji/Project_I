@@ -10,7 +10,9 @@ namespace Project_I.Bot
     [NodeChildLimit(0)]
     public class IfSeeLatentTarget : ConditionNode
     {
-        private HashSet<Transform> latentTargetTransforms = new HashSet<Transform>();
+        // 潜在目标序列，这是一个引用
+        private HashSet<Transform> latentTargetTransforms;
+        
         // 需要连续成功几次才成功？
         private int number;
         
@@ -21,21 +23,27 @@ namespace Project_I.Bot
         public IfSeeLatentTarget() : base() { }
 
         // --- 重写 Initialize 方法来解析参数 ---
-        public override void Initialize(NpcBehaviorController ownerNpcBehaviorController, Transform ownerTransform, Dictionary<string, string> parameters)
+        public override void Initialize(NpcBehaviorController ownerNpcBehaviorController, Transform ownerTransform, List<BehaviorNodeParameter> parameters)
         {
             base.Initialize(ownerNpcBehaviorController, ownerTransform, parameters);
             
             // 设置潜在的transform目标
-            latentTargetTransforms = GameSceneManager.Instance.Player.transform;
+            if (ownerNpcBehaviorController.gameObject.layer == LayerDataManager.Instance.enemyLayer)
+                latentTargetTransforms = GameSceneManager.Instance.PartyATransforms;
+            else
+                latentTargetTransforms = GameSceneManager.Instance.PartyBTransforms;
 
             // 从字典中安全地读取 "number" 参数
-            if (parameters.TryGetValue("number", out string numberValue))
+            if (FindParameterAsString("number", out string numStr, ref parameters))
             {
-                int.TryParse(numberValue, out this.number);
+                int.TryParse(numStr, out number);
+                // Debug.Log("行为树config已设置number：" + number);
             }
-            
-            // 如果参数不存在或解析失败，给一个默认值
-            if (this.number <= 0) this.number = 5;
+            else
+            {
+                // 给到默认值
+                number = 5;
+            }
 
             recentCheck = new bool[this.number];
             for (int i = 0; i < number; i++)
@@ -46,41 +54,69 @@ namespace Project_I.Bot
         
         protected override bool Check()
         {
-            // 通过发射射线检测；
-            //Transform playerTransform = GameSceneManager.Instance.player.transform;
-            // 玩家方向
-            Vector2 playerDirection = (latentTargetTransforms.position - this.transform.position).normalized;
-            // 二维射线检测
-            RaycastHit2D hit2D = Physics2D.Raycast(this.transform.position, playerDirection, 
-                NpcBehaviorController.sight, LayerDataManager.Instance.groundLayerMask | LayerDataManager.Instance.playerLayerMask);
-            
             bool thisANS = false;
+            List<Transform> canBeSeenTransforms = new List<Transform>();
             
-            //Debug.DrawLine(this.playerTransform.position, this.playerTransform.position + (Vector3)playerDirection * enemy.sight, Color.red);
-            
-            // 分析检测结果
-            if (hit2D.collider is null)
+            // 每个都射线检测一次，取最近者作为该次的目标
+            foreach (Transform latentTargetTransform in latentTargetTransforms)
             {
-                thisANS = false;
-            }
-            else
-            {
-                // 能直接看到玩家。
-                if (hit2D.collider.gameObject == GameSceneManager.Instance.Player.gameObject)
+                // 通过发射射线检测
+                // 目标方向
+                Vector2 targetDirection = (latentTargetTransform.position - this.transform.position).normalized;
+                // 二维射线检测
+                RaycastHit2D hit2D = Physics2D.Raycast(this.transform.position, targetDirection,
+                    NpcBehaviorController.sight,
+                    LayerDataManager.Instance.groundLayerMask |
+                    ( NpcBehaviorController.gameObject.layer == LayerDataManager.Instance.enemyLayer ? 
+                        (LayerDataManager.Instance.playerLayerMask | 
+                        LayerDataManager.Instance.friendlyLayerMask ) : 
+                        LayerDataManager.Instance.enemyLayerMask));
+
+                // 分析检测结果
+                if (hit2D.collider is null)
                 {
-                    thisANS = true;
+                    continue;
                 }
-                // 被地形阻隔
                 else
                 {
-                    thisANS = false;
+                    // 被地形阻隔
+                    if (hit2D.collider.gameObject.layer == LayerDataManager.Instance.groundLayer)
+                    {
+                        continue;
+                    }
+                    // 能直接看到该目标
+                    else
+                    {
+                        canBeSeenTransforms.Add(hit2D.collider.transform);
+                    }
+                }
+            }
+
+            if (canBeSeenTransforms.Count <= 0)
+            {
+                // Debug.Log("没有看见任何目标");
+                return false;
+            }
+            
+            // 获取了能看到的所有目标
+            // 筛选最优先的
+            thisANS = true;
+            float distMin = float.MaxValue;
+            Transform theTarget = null;
+            foreach (Transform latentTargetTransform in canBeSeenTransforms)
+            {
+                float thisDistance = (latentTargetTransform.position - this.transform.position).magnitude;
+                if (thisDistance < distMin)
+                {
+                    distMin = thisDistance;
+                    theTarget = latentTargetTransform;
                 }
             }
             
-            /*if (thisANS)
-                Debug.Log("射线检测：成功");
-            else
-                Debug.Log("射线检测：失败");*/
+            // 最优先的目标：theTarget
+            // 在黑板上记录theTarget
+            NpcBehaviorController.targetUnitTransform = theTarget;
+            // Debug.Log("更新目标：" + theTarget.gameObject.name);
             
             // 近期数据整体前移
             for (int i = 0; i < number - 1; i++)
@@ -98,72 +134,122 @@ namespace Project_I.Bot
                     return false;
                 }
             }
-            // ("成功看到玩家");
+            
+            // Debug.Log("成功看见目标");
             return true;
         }
     }
     
     // 检测当前敌人是否能看到具备玩家视野
-    [NodeName("条件|玩家是否在一定范围内")]
+    [NodeName("条件|当前目标是否在一定范围内")]
     [NodeChildLimit(0)]
     public class IfPursueTargetInAttackRadius : ConditionNode
     {
-        private Transform playerTransform;
         private float radius;
 
         // --- 移除构造函数参数 ---
         public IfPursueTargetInAttackRadius() : base() { }
-
-        // --- 重写 Initialize 方法来解析参数 ---
-        public override void Initialize(NpcBehaviorController ownerNpcBehaviorController, Transform ownerTransform, Dictionary<string, string> parameters)
-        {
-            base.Initialize(ownerNpcBehaviorController, ownerTransform, parameters);
-            
-            playerTransform = GameSceneManager.Instance.Player.transform;
-
-            // 从字典中安全地读取 "number" 参数
-            if (parameters.TryGetValue("radius", out string radiusValue))
-            {
-                float.TryParse(radiusValue, out this.radius);
-            }
-            
-            // 如果参数不存在或解析失败，给一个默认值
-            if (this.radius <= 0) this.radius = 7.5f;
-
-        }
         
-        public IfPursueTargetInAttackRadius(Transform playerTransform, NpcBehaviorController npcBehaviorController, float radius):base()
+        public IfPursueTargetInAttackRadius(NpcBehaviorController npcBehaviorController, float radius):base()
         {
-            this.playerTransform = playerTransform;
             this.NpcBehaviorController = npcBehaviorController;
             this.radius = radius;
+        }
+
+        // --- 重写 Initialize 方法来解析参数 ---
+        public override void Initialize(NpcBehaviorController ownerNpcBehaviorController, Transform ownerTransform, List<BehaviorNodeParameter> parameters)
+        {
+            base.Initialize(ownerNpcBehaviorController, ownerTransform, parameters);
+
+            // 从字典中安全地读取 "radius" 参数
+            if (FindParameterAsString("radius", out string radiusStr, ref parameters)){
+                    float.TryParse(radiusStr, out radius);
+                    // Debug.Log("行为树config已设置radius：" +  radius);
+            }
+            else
+            {
+                // 如果参数不存在或解析失败，给一个默认值
+                radius = NpcBehaviorController.sight;
+            }
+
         }
         
         protected override bool Check()
         {
-            float dist = Vector2.Distance(playerTransform.position, this.playerTransform.position);
+            if (NpcBehaviorController.targetUnitTransform is null)
+                return false;
             
-            /*if (dist <= this.radius)
-                Debug.Log("在玩家附近的一定范围内");*/
-            
+            float dist = Vector2.Distance(NpcBehaviorController.targetUnitTransform.position, this.transform.position);
             return dist <= radius;
         }
     }
     
-    // 敌人追踪玩家
-    [NodeName("动作|追踪玩家")]
+    
+    
+    // 检测当前敌人是否能看到具备玩家视野
+    [NodeName("条件|当前目标是否在合适枪线上")]
     [NodeChildLimit(0)]
-    public class TracePlayer : ActionNode
+    public class IfPursueTargetInGunLine : ConditionNode
+    {
+        private float angle;
+
+        // --- 无参构造函数 ---
+        public IfPursueTargetInGunLine() : base() { }
+        
+        public IfPursueTargetInGunLine(NpcBehaviorController npcBehaviorController, float angle):base()
+        {
+            this.NpcBehaviorController = npcBehaviorController;
+            this.angle = angle;
+        }
+
+        // --- 重写 Initialize 方法来解析参数 ---
+        public override void Initialize(NpcBehaviorController ownerNpcBehaviorController, Transform ownerTransform, List<BehaviorNodeParameter> parameters)
+        {
+            base.Initialize(ownerNpcBehaviorController, ownerTransform, parameters);
+
+            // 从字典中安全地读取 "radius" 参数
+            if (FindParameterAsString("angle", out string angleStr, ref parameters)){
+                float.TryParse(angleStr, out angle);
+                // Debug.Log("行为树config已设置radius：" +  radius);
+            }
+            else
+            {
+                // 如果参数不存在或解析失败，给一个默认值
+                angle = 10.0f;
+            }
+
+        }
+        
+        protected override bool Check()
+        {
+            if (NpcBehaviorController.targetUnitTransform is null)
+                return false;
+            
+            Vector2 targetDirection = (NpcBehaviorController.targetUnitTransform.position - this.transform.position).normalized;
+            Vector2 thisDirection = (NpcBehaviorController.GetComponent<Rigidbody2D>().velocity).normalized;
+            float realAngle = Mathf.Rad2Deg * Mathf.Acos(Vector2.Dot(thisDirection, targetDirection));
+            
+            // Debug.Log(realAngle);
+            
+            return realAngle <= angle;
+        }
+    }
+    
+    
+    // 追踪
+    [NodeName("动作|追踪目标")]
+    [NodeChildLimit(0)]
+    public class TraceTarget : ActionNode
     {
         private bool traceFinished = false;
         protected override void Start()
         {
             traceFinished = false;
             UseTemporalTickInterval = false;
+
+            NpcBehaviorController.StartCoroutine(NpcBehaviorController.TraceTargetOnce(this));
             
-            tree.npcBehaviorController.BeginTraceAnother(this, GameSceneManager.Instance.Player);
-            
-            Debug.Log("开始追踪玩家");
+            // Debug.Log("开始追踪目标");
         }
 
         protected override bool Check()
@@ -171,26 +257,71 @@ namespace Project_I.Bot
             return traceFinished;
         }
 
-        public void SetTraceEnd()
+        public void End()
         {
             traceFinished = true;
-            Debug.Log("结束追踪玩家");
+            // Debug.Log("结束追踪目标");
         }
     }
     
-    // 向玩家开火
-    [NodeName("动作|向玩家开火")]
+    // 向目标开火
+    [NodeName("动作|向目标开火")]
     [NodeChildLimit(0)]
-    public class FireToPlayer : ActionNode
+    public class FireToTarget : ActionNode
     {
+        [HideInInspector]
+        // 开火时间
+        public float fireTime;
+        [HideInInspector]
+        // 假设的弹速（计算）提前量
+        public float bulletSpeed;
+        
+        private bool fireToTargetFinished;
+        
+
+        public override void Initialize(NpcBehaviorController ownerNpcBehaviorController, Transform ownerTransform, List<BehaviorNodeParameter> parameters)
+        {
+            base.Initialize(ownerNpcBehaviorController, ownerTransform, parameters);
+
+            if (FindParameterAsString("fireTime", out string fireTimeStr, ref parameters))
+            {
+                float.TryParse(fireTimeStr, out fireTime);
+            }
+            else
+            {
+                fireTime = 1.0f;
+            }
+            
+            if (FindParameterAsString("bulletSpeed", out string bulletSpeed, ref parameters))
+            {
+                float.TryParse(bulletSpeed, out fireTime);
+            }
+            else
+            {
+                fireTime = 1.0f;
+            }
+        }
+
         protected override void Start()
         {
-            throw new System.NotImplementedException();
+            fireToTargetFinished = false;
+            
+            UseTemporalTickInterval = false;
+            
+            NpcBehaviorController.StartCoroutine(NpcBehaviorController.FireToTargetOnce(this));
+
+            // Debug.Log("开始向目标开火");
         }
 
         protected override bool Check()
         {
-            throw new System.NotImplementedException();
+            return fireToTargetFinished;
+        }
+
+        public void End()
+        {
+            fireToTargetFinished = true;
+            // Debug.Log("结束向目标开火");
         }
     }
 }

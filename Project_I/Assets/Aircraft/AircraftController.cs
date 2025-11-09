@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Sirenix.OdinInspector;
 using UnityEngine;
 
 
@@ -16,41 +17,56 @@ public class AircraftController : MonoBehaviour
     private const float fixedFrameTime = 0.02f;
     
     // 飞机参数
-    [Header("慢车出力")]
+    [LabelText("慢车出力")]
     public float engineF_0 = 1.0f;
-    [Header("满车出力")]
+    [LabelText("满车出力")]
     public float engineF_1 = 15.5f;
-    [Header("加力出力")]
+    [LabelText("加力出力")]
     public float engineF_2 = 30.2f;
+    [LabelText("每秒引擎出力最大变化量")]
+    public float maxChangePerSecondEngineF = 23.0f;
     
-    [Header("飞机质量")]
+    [LabelText("飞机质量")]
     public float mass = 1.0f;
     
-    [Header("最小回转角速度（°/s）")]
+    [LabelText("最小回转角速度（°/s）")]
     public float minRotateRatio = 20f;
-    [Header("最大回转角速度（°/s）")]
+    [LabelText("最大回转角速度（°/s）")]
     public float maxRotateRatio = 75f;
     
-    [Header("最佳回转速度起点")]
+    [LabelText("最佳回转速度起点")]
     public float minBestRotateSpeed = 5.0f;
-    [Header("最佳回转速度终点")]
+    [LabelText("最佳回转速度终点")]
     public float maxBestRotateSpeed = 20.0f;
-    [Header("锁舵速度")]
+    [LabelText("锁舵速度")]
     public float rudderLockSpeed = 40.0f;
 
-    [Header("水平安定力")]
+    [LabelText("水平安定力")]
     public float horizonalStability = 0.035f;
-    [Header("存能系数")]
+    [LabelText("存能系数")]
     public float energyRetention = 0.5f;
-    [Header("到达最大翼面效应的速度")]
+    [LabelText("到达最大翼面效应的速度")]
     public float maxWingStablilitySpeed = 7.5f;
     
     // 是否使用推进
     private bool useStandardThrust;
     // 是否使用加力
     private bool useAugmentationThrust;
+
+    public bool UseStandardThrust
+    {
+        get { return useStandardThrust; }
+    }
+
+    public bool UseAugmentationThrust
+    {
+        get { return useAugmentationThrust; }
+    }
         
     // 几个关键力
+    private float targetEngineF;
+    private float currEngineF;
+    private float maxChangePerFrameEngineF;
     private Vector2 engineF;
     private Vector2 liftF;
     private Vector2 fricF;
@@ -74,6 +90,11 @@ public class AircraftController : MonoBehaviour
             return velocity;
         }
     }
+
+    public Vector2 getAcceleration()
+    {
+        return sumF / _rigidbody2D.mass / fixedFrameTime;
+    }
     
     void Start()
     {
@@ -84,6 +105,10 @@ public class AircraftController : MonoBehaviour
         velocity = Vector2.zero;
         speed = 0;
         angularVelocity = 0;
+        
+        currEngineF = engineF_0;
+        
+        maxChangePerFrameEngineF = maxChangePerSecondEngineF * fixedFrameTime;
         
         _rigidbody2D = GetComponent<Rigidbody2D>();
         _rigidbody2D.mass = mass;
@@ -107,11 +132,23 @@ public class AircraftController : MonoBehaviour
             gravityF = mass * g * Vector2.down;
             // 引擎
             if (!useStandardThrust)
-                engineF = engineF_0 * transform.right;
+                targetEngineF = engineF_0;
             else if (useStandardThrust && !useAugmentationThrust)
-                engineF = engineF_1 * transform.right;
+                targetEngineF = engineF_1;
             else
-                engineF = engineF_2 * transform.right;
+                targetEngineF = engineF_2;
+            
+            // 引擎变力
+            if (Mathf.Abs(currEngineF - targetEngineF) <= maxChangePerFrameEngineF)
+                currEngineF = targetEngineF;
+            else if (targetEngineF >  currEngineF)
+                currEngineF += maxChangePerFrameEngineF;
+            else
+                currEngineF -= maxChangePerFrameEngineF;
+            
+            engineF = currEngineF * transform.right;
+            
+            
             // 升力
             if (!useStandardThrust)
                 liftF = -gravityF * 0.25f;
@@ -195,7 +232,7 @@ public class AircraftController : MonoBehaviour
             // 开始作用 （产生位移）
             // transform.position += (Vector3)(velocity * fixedFrameTime);
             
-            _rigidbody2D.AddForce(sumF, ForceMode2D.Force);
+            _rigidbody2D.AddForce(sumF * Time.deltaTime / Time.fixedDeltaTime, ForceMode2D.Force);
         }
         
         //Debug.Log(speed);
