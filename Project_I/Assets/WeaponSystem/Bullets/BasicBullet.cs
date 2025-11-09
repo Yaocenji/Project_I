@@ -29,20 +29,28 @@ public class BasicBullet : MonoBehaviour
     
     public virtual void OnTriggerEnter2D(Collider2D other)
     {
-        // 敌方子弹撞到我方
-        // TODO 友方现在未加入
+        // 敌方子弹撞到玩家
         if (gameObject.layer == LayerDataManager.Instance.enemyBulletLayer &&
-            (other.gameObject.layer == LayerDataManager.Instance.playerLayer /*||
-             other.gameObject.layer == LayerDataManager.Instance.friendlyLayer*/))
+            other.gameObject.layer == LayerDataManager.Instance.playerLayer)
         {
             GameSceneManager.Instance.Player.GetComponent<UnitHPController>().Hit(damage);
+            
+            EventSystem.EventBus.Publish(new EventSystem.PlayerAttackedEvent(damage,
+                GetComponent<Rigidbody2D>().velocity.normalized ));
+        }
+
+        // 敌方子弹撞到友方
+        if (gameObject.layer == LayerDataManager.Instance.enemyBulletLayer &&
+            other.gameObject.layer == LayerDataManager.Instance.friendlyLayer)
+        {
+            other.GetComponent<UnitHPController>().Hit(damage);
         }
         
         // 友方子弹撞到敌人
         if (gameObject.layer == LayerDataManager.Instance.friendlyBulletLayer &&
             other.gameObject.layer == LayerDataManager.Instance.enemyLayer)
         {
-            other.gameObject.GetComponent<NpcBehaviorController>().GetComponent<UnitHPController>().Hit(damage);
+            other.gameObject.GetComponent<UnitHPController>().Hit(damage);
         }
         
         Destroy(gameObject);

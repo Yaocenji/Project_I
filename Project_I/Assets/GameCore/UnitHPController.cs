@@ -40,11 +40,13 @@ namespace Project_I
 
             if (gameObject.layer == LayerDataManager.Instance.enemyLayer)
             {
-                GetComponent<BasicEnemy>().Die();
+                GameSceneManager.Instance.DieEnemy(gameObject);
+                // GetComponent<BasicEnemy>().Die();
             }
             else if (gameObject.layer == LayerDataManager.Instance.friendlyLayer)
             {
-                GetComponent<BasicFriend>().Die();
+                GameSceneManager.Instance.DieFriend(gameObject);
+                // GetComponent<BasicFriend>().Die();
             }
         }
     }

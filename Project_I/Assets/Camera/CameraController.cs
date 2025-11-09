@@ -9,6 +9,8 @@ namespace Project_I
 {
     public class CameraController : MonoBehaviour
     {
+        public static CameraController Instance;
+        
         [LabelText("速度的摄像机偏移系数")] [Range(0, 1)] public float speedPosParam = 0.25f;
         [LabelText("加速度的摄像机偏移系数")] [Range(0, 0.01f)] public float accelerationPosParam = 0.000f;
         [LabelText("速度的摄像机大小系数")] [Range(0, 0.5f)] public float speedScaleParam = 0.15f;
@@ -34,9 +36,6 @@ namespace Project_I
         // 存储一组：无特效的cameraPos和cameraSize
         private Vector2 NoEffectCameraPosition;
         private float NoEffectCameraSize;
-        
-        // Debug
-        private int frameCount = 0;
 
         public float RawCameraSize
         {
@@ -45,6 +44,8 @@ namespace Project_I
 
         private void Awake()
         {
+            Instance = this;
+            
             // 注册为主摄像机
             GameSceneManager.Instance.RegisterMainCamera(GetComponent<Camera>());
             
@@ -97,10 +98,9 @@ namespace Project_I
             
             /*transform.position = new Vector3(NoEffectCameraPosition.x, NoEffectCameraPosition.y, -10);
             cam.orthographicSize = NoEffectCameraSize;*/
-        }
-
-        private void Update()
-        {
+            
+            
+            
             // 以下加入镜头特效
             // 镜头抖动：硬弹簧
             float k = 10.0f;
@@ -110,16 +110,15 @@ namespace Project_I
             // 胡克定律
             Vector2 posForce = k * posDist * posDir;
             Vector2 newPos = (Vector2)transform.position + posForce * Time.deltaTime;
+            
+            
+            
             transform.position = new Vector3(newPos.x, newPos.y, -10);
-            
             cam.orthographicSize = NoEffectCameraSize;
-            
-            /*if (frameCount % 100 == 0)
-            {
-                AddSingleShake(new Vector2(0.5f, 0.5f));
-            }*/
+        }
 
-            frameCount++;
+        private void Update()
+        {
         }
 
         public void AddSingleShake(Vector2 offset)

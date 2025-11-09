@@ -13,14 +13,6 @@ namespace Project_I
             GameSceneManager.Instance.RegisterEnemy(gameObject);
         }
 
-        public void Die()
-        {
-            // 删除敌人
-            GameSceneManager.Instance.DieEnemy(gameObject);  
-            // 销毁
-            Destroy(gameObject);
-        }
-
         // Start is called before the first frame update
         void Start()
         {

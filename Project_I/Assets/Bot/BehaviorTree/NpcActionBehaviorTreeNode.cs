@@ -236,6 +236,17 @@ namespace Project_I.Bot
     }
     
     
+    // 检测当前的开火冷却
+    [NodeName("条件|当前开火冷却是否结束")]
+    [NodeChildLimit(0)]
+    public class IfFireCooledDown : ConditionNode
+    {
+        protected override bool Check()
+        {
+            return NpcBehaviorController.fireCooledDown;
+        }
+    }
+    
     // 追踪
     [NodeName("动作|追踪目标")]
     [NodeChildLimit(0)]
@@ -272,13 +283,17 @@ namespace Project_I.Bot
         [HideInInspector]
         // 开火时间
         public float fireTime;
+        
         [HideInInspector]
         // 假设的弹速（计算）提前量
         public float bulletSpeed;
         
+        [HideInInspector]
+        // 开火的冷却
+        public float coolDownTime;
+        
         private bool fireToTargetFinished;
         
-
         public override void Initialize(NpcBehaviorController ownerNpcBehaviorController, Transform ownerTransform, List<BehaviorNodeParameter> parameters)
         {
             base.Initialize(ownerNpcBehaviorController, ownerTransform, parameters);
@@ -292,13 +307,22 @@ namespace Project_I.Bot
                 fireTime = 1.0f;
             }
             
-            if (FindParameterAsString("bulletSpeed", out string bulletSpeed, ref parameters))
+            if (FindParameterAsString("bulletSpeed", out string bulletSpeedStr, ref parameters))
             {
-                float.TryParse(bulletSpeed, out fireTime);
+                float.TryParse(bulletSpeedStr, out bulletSpeed);
             }
             else
             {
-                fireTime = 1.0f;
+                bulletSpeed = 100.0f;
+            }
+            
+            if (FindParameterAsString("coolDown", out string coolDownStr, ref parameters))
+            {
+                float.TryParse(coolDownStr, out coolDownTime);
+            }
+            else
+            {
+                coolDownTime = 25.0f;
             }
         }
 
@@ -321,7 +345,12 @@ namespace Project_I.Bot
         public void End()
         {
             fireToTargetFinished = true;
-            // Debug.Log("结束向目标开火");
+            
+            // 进入冷却状态，并且在15秒后冷却结束
+            Debug.Log("结束向目标开火，进入冷却");
+            NpcBehaviorController.fireCooledDown = false;
+            NpcBehaviorController.StartCoroutine(NpcBehaviorController.ActionAfterTime(coolDownTime,
+                () => { NpcBehaviorController.fireCooledDown = true; }));
         }
     }
 }

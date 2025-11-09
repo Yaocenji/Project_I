@@ -47,6 +47,12 @@ namespace Project_I.UI
         // Update is called once per frame
         void Update()
         {
+            if (target is null)
+            {
+                Debug.LogError("target is null");
+                return;
+            }
+            
             // 计算当前的方向
             Vector2 thisPos = mainCamera.transform.position;
             Vector2 targetPos = target.position;
@@ -57,13 +63,14 @@ namespace Project_I.UI
             float sp = targetRigidbody2D.velocity.magnitude;
             float tmpT = 1.0f - Mathf.Exp(-0.05f * sp);
             // 设置动态地inner、outer半径
-            float maxRadiusParam = 1.2f;
+            float maxRadiusParam = 1.5f;
             dynamicInnerRadius = innerRadius + innerRadius * (maxRadiusParam - 1) * tmpT;
             dynamicOuterRadius = outerRadius + outerRadius * (maxRadiusParam - 1) * tmpT;
             
-            // 设置图标位置、姿态
+            // 设置图标位置
             iconRectTransform.anchoredPosition = direction * dynamicOuterRadius;
-            iconRectTransform.rotation = target.rotation;
+            // 设置图标的旋转s
+            // iconRectTransform.rotation = target.rotation;
             
             // 设置指示线位置、姿态
             line.points[0] = direction * dynamicInnerRadius;

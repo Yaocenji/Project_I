@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using EventBus = Project_I.EventSystem.EventBus;
 
 namespace Project_I
 {
@@ -17,7 +18,7 @@ public class GameSceneManager : MonoBehaviour
         get => _mainCamera;
     }
 
-    public GameObject _player;
+    private GameObject _player;
     public GameObject Player { get => _player; }
 
 
@@ -45,8 +46,16 @@ public class GameSceneManager : MonoBehaviour
         
         _fiend = new HashSet<GameObject>();
         _enemy = new HashSet<GameObject>();
+        
+        // 注册事件：
+        EventBus.Subscribe<EventSystem.PlayerAttackedEvent>(PlayerHit);
     }
-    
+
+    private void OnDestroy()
+    {
+        EventBus.Unsubscribe<EventSystem.PlayerAttackedEvent>(PlayerHit);
+    }
+
     // 注册主摄像机
     public bool RegisterMainCamera(Camera mc)
     {
@@ -77,7 +86,8 @@ public class GameSceneManager : MonoBehaviour
     {
         if (ff.layer == LayerDataManager.Instance.friendlyLayer)
         {
-            ff.AddComponent<GameSceneManager>();
+            Debug.Log("注册友方单位");
+            _fiend.Add(ff);
             PartyATransforms.Add(ff.transform);
         }
     }
@@ -87,6 +97,7 @@ public class GameSceneManager : MonoBehaviour
     {
         if (en.layer == LayerDataManager.Instance.enemyLayer)
         {
+            Debug.Log("注册敌方单位");
             _enemy.Add(en);
             PartyBTransforms.Add(en.transform);
             EventSystem.EventBus.Publish(new EventSystem.EnemyRegisteredEvent(en));
@@ -120,7 +131,14 @@ public class GameSceneManager : MonoBehaviour
             PartyBTransforms.Remove(en.transform);
             EventSystem.EventBus.Publish(new EventSystem.EnemyDiedEvent(en));
         }
+        Destroy(en, 0.05f);
     }
     
+    
+    // 玩家受击
+    public void PlayerHit(EventSystem.PlayerAttackedEvent ev)
+    {
+        CameraController.Instance.AddSingleShake(-0.5f * ev.Direction);
+    }
 }
 }

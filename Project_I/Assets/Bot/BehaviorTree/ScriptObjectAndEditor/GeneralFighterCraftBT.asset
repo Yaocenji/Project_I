@@ -41,7 +41,12 @@ MonoBehaviour:
             position: {x: 0, y: 0}
             parameters:
             - Key: angle
-              Value: 10
+              Value: 7
+          - typeName: "\u6761\u4EF6|\u5F53\u524D\u5F00\u706B\u51B7\u5374\u662F\u5426\u7ED3\u675F"
+            children: []
+            guid: 
+            position: {x: 0, y: 0}
+            parameters: []
           guid: 
           position: {x: 0, y: 0}
           parameters: []
@@ -51,7 +56,9 @@ MonoBehaviour:
           position: {x: 0, y: 0}
           parameters:
           - Key: bulletSpeed
-            Value: 
+            Value: 100
+          - Key: fireTime
+            Value: 1.5
         guid: 
         position: {x: 0, y: 0}
         parameters: []

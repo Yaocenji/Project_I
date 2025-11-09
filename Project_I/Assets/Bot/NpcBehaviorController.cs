@@ -48,6 +48,8 @@ namespace Project_I
         // 以下是行为树BlackBoard
         [NonSerialized]
         public Transform targetUnitTransform;
+        [NonSerialized]
+        public bool fireCooledDown = true;
         
         //Debug用：
         private List<Vector2> debugPath;
@@ -178,13 +180,14 @@ namespace Project_I
         }
         
         
-        // 开火
+        // 开火协程
         public IEnumerator FireToTargetOnce(FireToTarget btNode)
         {
             float time = btNode.fireTime;
             int number = 10;
             float interval = time / number;
             
+            Debug.Log("time: " + time);
             Debug.Log("interval: " + interval);
             
             state = BotState.Attack;
@@ -203,7 +206,6 @@ namespace Project_I
 
             for (int i = 0; i < number; i++)
             {
-                /*
                 // 获得自己的速度
                 Vector2 thisVelocity = thisRg.velocity;
                 // 获取目标的速度
@@ -216,15 +218,14 @@ namespace Project_I
                 bool hasPreciseFirePos = GetLeadPosition(transform.position, bulletVelocity.magnitude,
                     targetUnitTransform.position, otherVelocity, out thePreciseFirePos);
                 
-                
                 if (hasPreciseFirePos)
                     targetPos = thePreciseFirePos;
                 else
                     targetPos = targetUnitTransform.position;
-                */
-                Debug.Log("已启动淘宝火控" + i);
                 
-                targetPos = targetUnitTransform.position;
+                Debug.Log("已开火" + i);
+                
+                // targetPos = targetUnitTransform.position;
 
                 yield return new WaitForSeconds(interval);
             }
@@ -276,6 +277,16 @@ namespace Project_I
             p = Bpos + Bvel * t;
             return true;
         }
+        
+        
+        // 一定时间后执行某个函数的协程
+        public IEnumerator ActionAfterTime(float time, Action action)
+        {
+            yield return new WaitForSeconds(time);
+            
+            action();
+        }
+        
         
         void OnDrawGizmos()
         {
