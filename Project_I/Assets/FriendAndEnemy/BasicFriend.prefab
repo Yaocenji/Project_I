@@ -48,11 +48,19 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1446422859255064483, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: m_Layer
+      value: 22
+      objectReference: {fileID: 0}
     - target: {fileID: 4984204296922973415, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_Name
       value: BasicFriend
       objectReference: {fileID: 0}
     - target: {fileID: 4984204296922973415, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 5579550782137315694, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_Layer
       value: 7
       objectReference: {fileID: 0}

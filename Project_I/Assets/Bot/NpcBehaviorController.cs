@@ -67,6 +67,8 @@ namespace Project_I
             // Debug
             patrolPos = new Vector2(transform.position.x, transform.position.y);
             targetPosDefault = new Vector2(transform.position.x, transform.position.y);
+            
+            // 要是有敌人或者友军似了
         }
 
         private void Update()
@@ -102,7 +104,7 @@ namespace Project_I
             // 追踪的时长
             float traceTime = 2.5f;
             // 追踪判定的次数
-            int traceCount = 10;
+            int traceCount = 20;
             
             // 根据上面两个值，计算出携程的一次等待间隔时间
             float interval = traceTime / traceCount;
@@ -114,11 +116,12 @@ namespace Project_I
                 debugPath.Clear();
                 debugPath.Add(transform.position);
                 
-                if (targetUnitTransform is not null)
+                if (targetUnitTransform != null)
                 {
+                    
                     debugPath.Add(targetUnitTransform.position);
 
-                    targetPos = targetUnitTransform.transform.position;
+                    targetPos = targetUnitTransform.position;
                 }
                 
                 yield return new WaitForSeconds(interval);
@@ -184,7 +187,7 @@ namespace Project_I
         public IEnumerator FireToTargetOnce(FireToTarget btNode)
         {
             float time = btNode.fireTime;
-            int number = 10;
+            int number = 20;
             float interval = time / number;
             
             Debug.Log("time: " + time);
@@ -206,6 +209,12 @@ namespace Project_I
 
             for (int i = 0; i < number; i++)
             {
+                if (otherRg == null)
+                {
+                    // 如果当前的目标已经死了，那么直接break，提前结束当前的扫射轮
+                    break;
+                }
+                
                 // 获得自己的速度
                 Vector2 thisVelocity = thisRg.velocity;
                 // 获取目标的速度
@@ -217,14 +226,13 @@ namespace Project_I
                 Vector2 thePreciseFirePos;
                 bool hasPreciseFirePos = GetLeadPosition(transform.position, bulletVelocity.magnitude,
                     targetUnitTransform.position, otherVelocity, out thePreciseFirePos);
-                
+
                 if (hasPreciseFirePos)
                     targetPos = thePreciseFirePos;
                 else
                     targetPos = targetUnitTransform.position;
-                
+            
                 Debug.Log("已开火" + i);
-                
                 // targetPos = targetUnitTransform.position;
 
                 yield return new WaitForSeconds(interval);
@@ -234,6 +242,8 @@ namespace Project_I
             state = BotState.Patrol;
             btNode.End();
         }
+        
+        
         /// <summary>
         /// 计算提前量命中点。
         /// 返回 true 表示有解，p 为预测命中位置。
@@ -290,14 +300,20 @@ namespace Project_I
         
         void OnDrawGizmos()
         {
-            if (debugPath == null) return;
+            /*if (debugPath == null) return;
             
             if (gameObject.layer == LayerDataManager.Instance.enemyLayer)
-                Gizmos.color = Color.red;
+            {
+                /*Gizmos.color = Color.red;
+                for (int i = 0; i < debugPath.Count - 1; i++)
+                    Gizmos.DrawLine(debugPath[i], debugPath[i + 1]);#1#
+            }
             else
-                Gizmos.color = Color.green;
-            for (int i = 0; i < debugPath.Count - 1; i++)
-                Gizmos.DrawLine(debugPath[i], debugPath[i + 1]);
+            {
+                /*Gizmos.color = Color.green;
+                for (int i = 0; i < debugPath.Count - 1; i++)
+                    Gizmos.DrawLine(debugPath[i], debugPath[i + 1]);#1#
+            }*/
         }
     }
         

@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7129699229861436173}
   - component: {fileID: 3761820698359142501}
   - component: {fileID: 2320593173578044106}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: TailSmoke
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4841,7 +4841,7 @@ GameObject:
   - component: {fileID: 3940150210354709727}
   - component: {fileID: 7215774445140001188}
   - component: {fileID: 4813753671321484943}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: TailSmokeBase
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4949,6 +4949,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 259167649483481451, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 927522546473796151, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -4989,6 +4993,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1446422859255064483, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: m_Layer
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 2673710156304287400, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 2736460054655817130, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: aircraftController
       value: 
@@ -4998,6 +5010,14 @@ PrefabInstance:
       value: Player
       objectReference: {fileID: 0}
     - target: {fileID: 4984204296922973415, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 5079321426296481475, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 5579550782137315694, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_Layer
       value: 6
       objectReference: {fileID: 0}

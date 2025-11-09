@@ -25,9 +25,9 @@ TagManager:
   - backLayer2
   - backLayer3
   - 
-  - 
-  - 
-  - 
+  - PlayerBody
+  - EnemyBody
+  - FriendlyBody
   - 
   - 
   - 

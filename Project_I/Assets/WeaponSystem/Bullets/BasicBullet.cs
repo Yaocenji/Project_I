@@ -29,9 +29,12 @@ public class BasicBullet : MonoBehaviour
     
     public virtual void OnTriggerEnter2D(Collider2D other)
     {
+        // 对方unit是碰撞箱所在object的父
+        GameObject otherUnit = other.transform.parent.gameObject;
+        
         // 敌方子弹撞到玩家
         if (gameObject.layer == LayerDataManager.Instance.enemyBulletLayer &&
-            other.gameObject.layer == LayerDataManager.Instance.playerLayer)
+            otherUnit.gameObject.layer == LayerDataManager.Instance.playerLayer)
         {
             GameSceneManager.Instance.Player.GetComponent<UnitHPController>().Hit(damage);
             
@@ -41,16 +44,16 @@ public class BasicBullet : MonoBehaviour
 
         // 敌方子弹撞到友方
         if (gameObject.layer == LayerDataManager.Instance.enemyBulletLayer &&
-            other.gameObject.layer == LayerDataManager.Instance.friendlyLayer)
+            otherUnit.gameObject.layer == LayerDataManager.Instance.friendlyLayer)
         {
-            other.GetComponent<UnitHPController>().Hit(damage);
+            otherUnit.GetComponent<UnitHPController>().Hit(damage);
         }
         
         // 友方子弹撞到敌人
         if (gameObject.layer == LayerDataManager.Instance.friendlyBulletLayer &&
-            other.gameObject.layer == LayerDataManager.Instance.enemyLayer)
+            otherUnit.gameObject.layer == LayerDataManager.Instance.enemyLayer)
         {
-            other.gameObject.GetComponent<UnitHPController>().Hit(damage);
+            otherUnit.gameObject.GetComponent<UnitHPController>().Hit(damage);
         }
         
         Destroy(gameObject);

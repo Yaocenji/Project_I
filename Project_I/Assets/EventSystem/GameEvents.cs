@@ -14,6 +14,17 @@ namespace Project_I.EventSystem
         public GameObject Enemy;
         public EnemyDiedEvent(GameObject enemy) => Enemy = enemy;
     }
+    
+    public struct FriendRegisteredEvent
+    {
+        public GameObject Friend;
+        public FriendRegisteredEvent(GameObject friend) => Friend = friend;
+    }
+    public struct FriendDiedEvent
+    {
+        public GameObject Friend;
+        public FriendDiedEvent(GameObject friend) => Friend = friend;
+    }
 
     public struct PlayerAttackedEvent
     {

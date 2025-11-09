@@ -40,7 +40,7 @@ public class SmallBomb : BasicBullet
     private new void OnTriggerEnter2D(Collider2D other)
     {
         // 撞到敌人或者地板
-        if (other is not null && 
+        if (other != null && 
             (other.gameObject.layer == LayerDataManager.Instance.enemyLayer 
              || other.gameObject.layer == LayerDataManager.Instance.groundLayer))
         {

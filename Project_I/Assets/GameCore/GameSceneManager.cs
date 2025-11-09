@@ -59,7 +59,7 @@ public class GameSceneManager : MonoBehaviour
     // 注册主摄像机
     public bool RegisterMainCamera(Camera mc)
     {
-        if (_mainCamera is not null)
+        if (_mainCamera != null)
             return false;
         _mainCamera = mc;
         return true;
@@ -89,6 +89,7 @@ public class GameSceneManager : MonoBehaviour
             Debug.Log("注册友方单位");
             _fiend.Add(ff);
             PartyATransforms.Add(ff.transform);
+            EventBus.Publish(new EventSystem.FriendRegisteredEvent());
         }
     }
     
@@ -100,7 +101,7 @@ public class GameSceneManager : MonoBehaviour
             Debug.Log("注册敌方单位");
             _enemy.Add(en);
             PartyBTransforms.Add(en.transform);
-            EventSystem.EventBus.Publish(new EventSystem.EnemyRegisteredEvent(en));
+            EventBus.Publish(new EventSystem.EnemyRegisteredEvent(en));
         }
     }
     
@@ -120,7 +121,9 @@ public class GameSceneManager : MonoBehaviour
         {
             _fiend.Remove(ff);
             PartyATransforms.Remove(ff.transform);
+            EventBus.Publish(new EventSystem.FriendDiedEvent());
         }
+        Destroy(ff, 0.05f);
     }
     // 敌方单位死亡
     public void DieEnemy(GameObject en)
@@ -129,7 +132,7 @@ public class GameSceneManager : MonoBehaviour
         {
             _enemy.Remove(en);
             PartyBTransforms.Remove(en.transform);
-            EventSystem.EventBus.Publish(new EventSystem.EnemyDiedEvent(en));
+            EventBus.Publish(new EventSystem.EnemyDiedEvent(en));
         }
         Destroy(en, 0.05f);
     }

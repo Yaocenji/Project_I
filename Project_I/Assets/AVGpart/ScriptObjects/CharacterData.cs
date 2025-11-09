@@ -78,7 +78,7 @@ namespace Project_I.AVGpart
             {
                 // 查找是否是这个角色
                 bool isThisCharacter = false;
-                if (characterName is null)
+                if (characterName == null)
                 {
                     isThisCharacter = false;
                 }

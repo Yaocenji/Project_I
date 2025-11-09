@@ -87,7 +87,7 @@ namespace Project_I.Bot
                     // 能直接看到该目标
                     else
                     {
-                        canBeSeenTransforms.Add(hit2D.collider.transform);
+                        canBeSeenTransforms.Add(latentTargetTransform);
                     }
                 }
             }
@@ -102,13 +102,29 @@ namespace Project_I.Bot
             // 筛选最优先的
             thisANS = true;
             float distMin = float.MaxValue;
+            
+            // 通过角度计算
+            float angleDotMax = float.MinValue;
+            
             Transform theTarget = null;
             foreach (Transform latentTargetTransform in canBeSeenTransforms)
             {
-                float thisDistance = (latentTargetTransform.position - this.transform.position).magnitude;
+                // 当前距离
+                /*float thisDistance = (latentTargetTransform.position - this.transform.position).magnitude;
+                
                 if (thisDistance < distMin)
                 {
                     distMin = thisDistance;
+                    theTarget = latentTargetTransform;
+                }*/
+                
+                
+                // 当前角度
+                float thisAngleDot = Vector2.Dot((latentTargetTransform.position - this.transform.position).normalized, NpcBehaviorController.transform.right);
+
+                if (thisAngleDot > angleDotMax)
+                {
+                    angleDotMax = thisAngleDot;
                     theTarget = latentTargetTransform;
                 }
             }
@@ -322,7 +338,7 @@ namespace Project_I.Bot
             }
             else
             {
-                coolDownTime = 25.0f;
+                coolDownTime = 15.0f;
             }
         }
 

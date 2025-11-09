@@ -67,7 +67,7 @@ public class EjectorController : MonoBehaviour
 
     private void Update()
     {
-        if (isAiming && currEjector is not null)
+        if (isAiming && currEjector != null)
         {
             _aimingPosition = AimingCameraPos(transform.position, aircraftController.GetTargetPosition(), Vector2.zero);
         }

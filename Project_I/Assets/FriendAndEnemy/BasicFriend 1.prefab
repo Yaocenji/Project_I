@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 3730893073145009140}
   - component: {fileID: 1012629863219312348}
   - component: {fileID: 5997425197446971984}
-  m_Layer: 8
+  m_Layer: 7
   m_Name: TailSmoke
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -223,7 +223,7 @@ ParticleSystem:
       serializedVersion: 2
       minMaxState: 0
       minColor: {r: 1, g: 1, b: 1, a: 1}
-      maxColor: {r: 1, g: 0.65723264, b: 0.65723264, a: 1}
+      maxColor: {r: 0, g: 1, b: 0, a: 1}
       maxGradient:
         serializedVersion: 2
         key0: {r: 1, g: 1, b: 1, a: 1}
@@ -4840,7 +4840,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 259167649483481451, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_Layer
-      value: 8
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 927522546473796151, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_LocalPosition.x
@@ -4884,7 +4884,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1446422859255064483, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_Layer
-      value: 21
+      value: 22
       objectReference: {fileID: 0}
     - target: {fileID: 2673710156304287400, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_Layer
@@ -4892,23 +4892,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3390105929778380251, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: hp
-      value: 10
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 4984204296922973415, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_Name
-      value: BasicEnemy
+      value: BasicFriend 1
       objectReference: {fileID: 0}
     - target: {fileID: 4984204296922973415, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_Layer
-      value: 8
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 5079321426296481475, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_Layer
-      value: 8
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 5579550782137315694, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_Layer
-      value: 8
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 6649136540886128981, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: engineF_0
@@ -4956,11 +4956,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6712319792098207423, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_Color.g
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6712319792098207423, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_Color.r
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -4977,7 +4977,7 @@ PrefabInstance:
       addedObject: {fileID: 2804939488120674074}
     - targetCorrespondingSourceObject: {fileID: 4984204296922973415, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 7929578686894768461}
+      addedObject: {fileID: 1351057332891600529}
   m_SourcePrefab: {fileID: 100100000, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
 --- !u!4 &4109709157140924000 stripped
 Transform:
@@ -5019,7 +5019,7 @@ MonoBehaviour:
   treeConfig: {fileID: 0}
   npcBehaviorController: {fileID: 4670668410498049319}
   interval: 0.2
---- !u!114 &7929578686894768461
+--- !u!114 &1351057332891600529
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5028,6 +5028,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 8141616446919884976}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 983dfa92a40e3584fb61598f05143072, type: 3}
+  m_Script: {fileID: 11500000, guid: 6ab386a96f0703c46bfe9544c6a1cf79, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
