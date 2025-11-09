@@ -22,7 +22,7 @@ MonoBehaviour:
     PrefabModifications: []
     SerializationNodes: []
   rootNode:
-    typeName: "\u4FEE\u9970|\u9006\u53D8\u5668"
+    typeName: "\u7EC4\u5408|\u5E8F\u5217\u5668"
     children:
     - typeName: "\u7EC4\u5408|\u9009\u62E9\u5668"
       children:

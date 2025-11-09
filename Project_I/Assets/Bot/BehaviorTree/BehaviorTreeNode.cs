@@ -376,6 +376,8 @@ namespace Project_I.Bot
         public bool UseTemporalTickInterval = false;
         // 若需要临时性地修改一次Tick时间间隔，那么需要知道改成多少？
         public float TemporalTickInterval = 0.3f;
+        // 是否可打断
+        public bool CanBeInterrupted = false;
         
         // The Tick method is sealed to ensure conditions are evaluated in one frame. 不可重写
         public sealed override NodeStatus Tick()
@@ -398,7 +400,11 @@ namespace Project_I.Bot
         /// <summary>
         /// 动作开始之时
         /// </summary>
-        protected abstract void Start();
+        protected virtual void Start()
+        {
+            // Default stop func:
+            tree.actingNode = this;
+        }
 
         /// <summary>
         /// 不断地确认：动作结束了没？
@@ -409,9 +415,15 @@ namespace Project_I.Bot
         /// <summary>
         /// 结束之时
         /// </summary>
-        protected virtual void Stop()
+        public virtual void Stop()
         {
-            // Default stop func: do nothing.
+            // Default stop func:
+            tree.actingNode = null;
+        }
+
+        public virtual void Interrupt()
+        {
+            // Do nothing;
         }
 
         protected void SetTemporalTickInterval()

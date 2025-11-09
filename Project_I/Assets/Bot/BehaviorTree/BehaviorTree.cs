@@ -19,6 +19,10 @@ namespace Project_I.Bot
         [LabelText("决策间隔（频率）")]
         public float interval = 0.3f;
         
+        [HideInInspector]
+        public ActionNode actingNode = null;   // 当前正在运行的节点
+        
+        
         // 有些动作节点结束的时候，会改用一次临时interval
         private bool useTemporalInterval = false;
         private float temporalInterval = 0.3f;
@@ -50,13 +54,13 @@ namespace Project_I.Bot
                 // 进行一次决策
                 if (root != null)
                 {
-                    ans = root.Tick();
+                    ans = Tick();
                 }
                 
                 // 如果ans为正
                 if (ans == NodeStatus.SUCCESS)
                 {
-                    // 那么全部刷成Failure
+                    // 那么全部刷成Running（默认状态）
                     SetAllStatusRunning();
                 }
                 
@@ -68,6 +72,26 @@ namespace Project_I.Bot
                 if (useTemporalInterval)
                     useTemporalInterval = false;
             }
+        }
+
+        private NodeStatus Tick()
+        {
+            // 当前正在运行动作节点
+            if (actingNode != null)
+            {
+                if (actingNode.CanBeInterrupted){
+                    // TODO 打断他然后调用
+                    actingNode.Interrupt();
+                    actingNode = null;
+                }
+                else
+                {
+                    // 否则就啥也不干
+                    return NodeStatus.FAILURE;
+                }
+            }
+            // 没有运行中的节点
+            return root.Tick();
         }
 
         private void SetAllStatusRunning()

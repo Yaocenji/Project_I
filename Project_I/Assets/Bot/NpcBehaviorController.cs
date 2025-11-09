@@ -130,7 +130,7 @@ namespace Project_I
             // 结束时：
             state = BotState.Idle;
             targetPosDefault = new Vector2(transform.position.x, transform.position.y);
-            btNode.End();
+            btNode.Stop();
         }
         
         
@@ -240,9 +240,14 @@ namespace Project_I
             
             ejectorController.EndEject();
             state = BotState.Patrol;
-            btNode.End();
+            btNode.Stop();
         }
         
+        // 随机线路
+        public IEnumerator GoRandomPathOnce(GoRandomPath btNode)
+        {
+            // 计算随机点
+        }
         
         /// <summary>
         /// 计算提前量命中点。

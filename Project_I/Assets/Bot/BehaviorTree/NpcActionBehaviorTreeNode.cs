@@ -271,6 +271,7 @@ namespace Project_I.Bot
         private bool traceFinished = false;
         protected override void Start()
         {
+            base.Start();
             traceFinished = false;
             UseTemporalTickInterval = false;
 
@@ -284,8 +285,9 @@ namespace Project_I.Bot
             return traceFinished;
         }
 
-        public void End()
+        public override void Stop()
         {
+            base.Stop();
             traceFinished = true;
             // Debug.Log("结束追踪目标");
         }
@@ -344,6 +346,8 @@ namespace Project_I.Bot
 
         protected override void Start()
         {
+            base.Start();
+            
             fireToTargetFinished = false;
             
             UseTemporalTickInterval = false;
@@ -358,8 +362,10 @@ namespace Project_I.Bot
             return fireToTargetFinished;
         }
 
-        public void End()
+        public override void Stop()
         {
+            base.Stop();
+            
             fireToTargetFinished = true;
             
             // 进入冷却状态，并且在15秒后冷却结束
@@ -367,6 +373,41 @@ namespace Project_I.Bot
             NpcBehaviorController.fireCooledDown = false;
             NpcBehaviorController.StartCoroutine(NpcBehaviorController.ActionAfterTime(coolDownTime,
                 () => { NpcBehaviorController.fireCooledDown = true; }));
+        }
+    }
+
+
+    [NodeName("动作|进入随机路线")]
+    [NodeChildLimit(0)]
+    public class GoRandomPath : ActionNode
+    {
+        [HideInInspector]
+        public bool goRandomPathFinished;
+        
+        private Coroutine coroutineHandle;
+        
+        public override void Initialize(NpcBehaviorController ownerNpcBehaviorController, Transform ownerTransform, List<BehaviorNodeParameter> parameters)
+        {
+            base.Initialize(ownerNpcBehaviorController, ownerTransform, parameters);
+
+            // 该动作可被中断
+            CanBeInterrupted = true;
+        }
+
+        protected override void Start()
+        {
+            base.Start();
+            goRandomPathFinished = false;
+        }
+
+        protected override bool Check()
+        {
+            return goRandomPathFinished;
+        }
+
+        public override void Interrupt()
+        {
+            base.Interrupt();
         }
     }
 }
