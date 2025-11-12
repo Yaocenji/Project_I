@@ -382,10 +382,16 @@ namespace Project_I.Bot
         // The Tick method is sealed to ensure conditions are evaluated in one frame. 不可重写
         public sealed override NodeStatus Tick()
         {
+            if (tree.actingNode == this)
+                return NodeStatus.RUNNING;
+            
             if (isFirstFrame)
             {
                 // 动作的起始
-                Start();
+                var tryStart = Start();
+                if (!tryStart)
+                    return NodeStatus.RUNNING;
+                
                 isFirstFrame = false;
             }
             status = Check() ? NodeStatus.SUCCESS : NodeStatus.FAILURE;
@@ -400,10 +406,15 @@ namespace Project_I.Bot
         /// <summary>
         /// 动作开始之时
         /// </summary>
-        protected virtual void Start()
+        protected virtual bool Start()
         {
             // Default stop func:
-            tree.actingNode = this;
+            var applyAns = tree.ApplyActionNodeExecute(this);
+            return applyAns;
+            /*if (applyAns)
+            {
+                Debug.Log("动作节点 申请 行为树运行权成功");
+            }*/
         }
 
         /// <summary>
@@ -418,7 +429,11 @@ namespace Project_I.Bot
         public virtual void Stop()
         {
             // Default stop func:
-            tree.actingNode = null;
+            var rlsAns = tree.ReleaseActionNodeExecute(this);
+            /*if (rlsAns)
+                Debug.Log("动作节点 释放 行为树运行权成功");*/
+            
+            TrySetTemporalTickInterval();
         }
 
         public virtual void Interrupt()
@@ -426,7 +441,7 @@ namespace Project_I.Bot
             // Do nothing;
         }
 
-        protected void SetTemporalTickInterval()
+        protected void TrySetTemporalTickInterval()
         {
             if (tree is not null && UseTemporalTickInterval)
             {

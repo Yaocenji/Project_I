@@ -252,6 +252,18 @@ namespace Project_I.Bot
     }
     
     
+    // 检测当前的追踪冷却
+    [NodeName("条件|当前追踪冷却是否结束")]
+    [NodeChildLimit(0)]
+    public class IfTraceCooledDown : ConditionNode
+    {
+        protected override bool Check()
+        {
+            return NpcBehaviorController.traceRemainTime > 0;
+        }
+    }
+    
+    
     // 检测当前的开火冷却
     [NodeName("条件|当前开火冷却是否结束")]
     [NodeChildLimit(0)]
@@ -259,25 +271,52 @@ namespace Project_I.Bot
     {
         protected override bool Check()
         {
-            return NpcBehaviorController.fireCooledDown;
+            return NpcBehaviorController.fireRemainTime > 0;
         }
     }
+    
     
     // 追踪
     [NodeName("动作|追踪目标")]
     [NodeChildLimit(0)]
     public class TraceTarget : ActionNode
     {
+        [HideInInspector]
+        // 追踪一次的冷却
+        public float coolDownTime;
+        
         private bool traceFinished = false;
-        protected override void Start()
+        private Coroutine coroutineHandle;
+
+        public override void Initialize(NpcBehaviorController ownerNpcBehaviorController, Transform ownerTransform, List<BehaviorNodeParameter> parameters)
         {
-            base.Start();
+            base.Initialize(ownerNpcBehaviorController, ownerTransform, parameters);
+            
+            // 该节点可以被打断
+            CanBeInterrupted = true;
+            
+            if (FindParameterAsString("coolDown", out string coolDownStr, ref parameters))
+            {
+                float.TryParse(coolDownStr, out coolDownTime);
+            }
+            else
+            {
+                coolDownTime = 15.0f;
+            }
+        }
+
+        protected override bool Start()
+        {
+            var ans = base.Start();
+            if (!ans)
+                return ans;
+            
             traceFinished = false;
             UseTemporalTickInterval = false;
 
-            NpcBehaviorController.StartCoroutine(NpcBehaviorController.TraceTargetOnce(this));
+            coroutineHandle = NpcBehaviorController.StartCoroutine(NpcBehaviorController.TraceTargetOnce(this));
             
-            // Debug.Log("开始追踪目标");
+            return true;
         }
 
         protected override bool Check()
@@ -290,6 +329,22 @@ namespace Project_I.Bot
             base.Stop();
             traceFinished = true;
             // Debug.Log("结束追踪目标");
+            // NpcBehaviorController.traceRemainTime = false;
+            if (NpcBehaviorController.traceRemainTime <= 0)
+                NpcBehaviorController.StartCoroutine(NpcBehaviorController.ActionAfterTime(coolDownTime,
+                    () => { NpcBehaviorController.traceRemainTime = NpcBehaviorController.maxTraceTime; }));
+        }
+
+        public override void Interrupt()
+        {
+            // 打断协程
+            NpcBehaviorController.StopCoroutine(coroutineHandle);
+            // 收尾
+            NpcBehaviorController.state = BotState.Idle;
+            NpcBehaviorController.targetPosDefault = new Vector2(transform.position.x, transform.position.y);
+            // 自身结束
+            base.Interrupt();
+            Stop();
         }
     }
     
@@ -344,9 +399,11 @@ namespace Project_I.Bot
             }
         }
 
-        protected override void Start()
+        protected override bool Start()
         {
-            base.Start();
+            var ans = base.Start();
+            if (!ans)
+                return ans;
             
             fireToTargetFinished = false;
             
@@ -354,6 +411,7 @@ namespace Project_I.Bot
             
             NpcBehaviorController.StartCoroutine(NpcBehaviorController.FireToTargetOnce(this));
 
+            return true;
             // Debug.Log("开始向目标开火");
         }
 
@@ -369,10 +427,11 @@ namespace Project_I.Bot
             fireToTargetFinished = true;
             
             // 进入冷却状态，并且在15秒后冷却结束
-            Debug.Log("结束向目标开火，进入冷却");
-            NpcBehaviorController.fireCooledDown = false;
-            NpcBehaviorController.StartCoroutine(NpcBehaviorController.ActionAfterTime(coolDownTime,
-                () => { NpcBehaviorController.fireCooledDown = true; }));
+            // Debug.Log("结束向目标开火，进入冷却");
+            // NpcBehaviorController.fireRemainTime = false;
+            if (NpcBehaviorController.fireRemainTime <= 0)
+                NpcBehaviorController.StartCoroutine(NpcBehaviorController.ActionAfterTime(coolDownTime,
+                    () => { NpcBehaviorController.fireRemainTime = NpcBehaviorController.maxFireTime; }));
         }
     }
 
@@ -394,10 +453,17 @@ namespace Project_I.Bot
             CanBeInterrupted = true;
         }
 
-        protected override void Start()
+        protected override bool Start()
         {
-            base.Start();
+            var ans = base.Start();
+            if (!ans)
+                return ans;
+            
             goRandomPathFinished = false;
+
+            coroutineHandle = NpcBehaviorController.StartCoroutine(NpcBehaviorController.GoRandomPathOnce(this));
+
+            return true;
         }
 
         protected override bool Check()
@@ -407,7 +473,22 @@ namespace Project_I.Bot
 
         public override void Interrupt()
         {
+            // 打断协程
+            NpcBehaviorController.StopCoroutine(coroutineHandle);
+            
+            // 收尾
+            
             base.Interrupt();
+            
+            Stop();
+        }
+
+
+        public override void Stop()
+        {
+            base.Stop();
+            goRandomPathFinished =  true;
+            coroutineHandle = null;
         }
     }
 }

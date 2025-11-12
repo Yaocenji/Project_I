@@ -69,8 +69,8 @@ namespace Project_I.UI
             
             // 设置图标位置
             iconRectTransform.anchoredPosition = direction * dynamicOuterRadius;
-            // 设置图标的旋转s
-            // iconRectTransform.rotation = target.rotation;
+            // 设置图标的旋转
+            iconRectTransform.rotation = target.rotation;
             
             // 设置指示线位置、姿态
             line.points[0] = direction * dynamicInnerRadius;
@@ -87,7 +87,10 @@ namespace Project_I.UI
             else if (d <= 6)
                 alpha = 1;
             else
+            {
                 alpha = Mathf.Exp(-0.1f * (d - 6));
+                alpha = alpha * 0.7f + 0.3f;
+            }
             
             icon.color = new Color(color.r, color.g, color.b, alpha);
             line.color = new Color(color.r, color.g, color.b, alpha);

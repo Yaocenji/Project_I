@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Project_I.Bot;
 using Sirenix.OdinInspector;
 using Unity.VisualScripting;
@@ -46,10 +47,18 @@ namespace Project_I
         public Vector2 patrolPos;
         
         // 以下是行为树BlackBoard
-        [NonSerialized]
+        [NonSerialized] // 目标Transform
         public Transform targetUnitTransform;
-        [NonSerialized]
-        public bool fireCooledDown = true;
+        
+        [NonSerialized] // 剩余可用 追踪动作时间
+        public float traceRemainTime = 8;
+        [NonSerialized] // 追踪动作冷却前最长时间
+        public const float maxTraceTime = 8;
+        
+        [NonSerialized] // 剩余可用 开火动作时间
+        public float fireRemainTime = 5;
+        [NonSerialized] // 开火动作冷却前最长时间
+        public const float maxFireTime = 5;
         
         //Debug用：
         private List<Vector2> debugPath;
@@ -101,10 +110,10 @@ namespace Project_I
         {
             state = BotState.Pursue;
             
-            // 追踪的时长
-            float traceTime = 2.5f;
+            // 最长追踪的时长
+            float traceTime = 25f;
             // 追踪判定的次数
-            int traceCount = 20;
+            int traceCount = 200;
             
             // 根据上面两个值，计算出携程的一次等待间隔时间
             float interval = traceTime / traceCount;
@@ -123,6 +132,10 @@ namespace Project_I
 
                     targetPos = targetUnitTransform.position;
                 }
+                
+                traceRemainTime -= interval;
+                if (traceRemainTime <= 0)
+                    break;
                 
                 yield return new WaitForSeconds(interval);
             }
@@ -224,7 +237,7 @@ namespace Project_I
                 Vector2 bulletVelocity = thisVelocity + btNode.bulletSpeed * thisVelocity.normalized;
                 // 淘宝火控
                 Vector2 thePreciseFirePos;
-                bool hasPreciseFirePos = GetLeadPosition(transform.position, bulletVelocity.magnitude,
+                bool hasPreciseFirePos = Bot.Navigation.Utility.GetLeadPosition(transform.position, bulletVelocity.magnitude,
                     targetUnitTransform.position, otherVelocity, out thePreciseFirePos);
 
                 if (hasPreciseFirePos)
@@ -232,9 +245,12 @@ namespace Project_I
                 else
                     targetPos = targetUnitTransform.position;
             
-                Debug.Log("已开火" + i);
+                // Debug.Log("已开火" + i);
                 // targetPos = targetUnitTransform.position;
-
+                fireRemainTime -= interval;
+                if (fireRemainTime <= 0)
+                    break;
+                
                 yield return new WaitForSeconds(interval);
             }
             
@@ -243,55 +259,86 @@ namespace Project_I
             btNode.Stop();
         }
         
-        // 随机线路
+        // 随机线路协程
         public IEnumerator GoRandomPathOnce(GoRandomPath btNode)
         {
+            // 最大协程时间
+            float maxTime = 60;
+            // 最小采样时间
+            float interval = 0.25f;
+            // 最长采样次数
+            int maxNumber = (int)(60f / 0.65f) + 1;
+            
+            // 判定到达目标点的距离门限
+            float reachDistance = 10.0f;
+            
+            
             // 计算随机点
+            Vector3[] randomPath = null;
+            float angleRange = 75.0f;
+            float minDistance = 75.0f;
+            float maxDistance = 200.0f;
+
+            int maxQueryTime = 15;
+            for (int i = 0; i < maxQueryTime; i++)
+            {
+                var hasAns = Bot.Navigation.Utility.TryGetRandomReachablePoint(
+                        transform.position, minDistance, maxDistance, transform.right, angleRange, out randomPath);
+                if (hasAns)
+                    break;
+                else
+                {
+                    // 放宽查找限制，避免卡死
+                    angleRange += 15;
+                    angleRange = Mathf.Min(angleRange, 180);
+
+                    minDistance -= 15;
+                    minDistance = Mathf.Max(minDistance, 0);
+                    
+                    maxDistance += 15;
+                }
+            }
+            if (randomPath == null)
+            {
+                btNode.Stop();
+                yield break;
+            }
+            
+            // Debug.Log("随机目标点：" + randomPath[randomPath.Length - 1]);
+            
+            // 预处理
+            LinkedList<Vector2> pathList = new LinkedList<Vector2>();
+            foreach (Vector3 v in randomPath)
+            {
+                pathList.AddLast(v);
+            }
+            // Debug.Log("生成路径点：" + string.Join(" -> ", pathList.Select(p => p.ToString())));
+            
+            debugPath.Clear();
+            debugPath.Add(transform.position);
+            foreach (Vector2 v in pathList)
+                debugPath.Add(v);
+            
+            // 拿到随机路径点，开始按照路径走
+            while (pathList.Count > 0)
+            {
+                targetPos = pathList.First.Value;
+                
+                // 如果到达当前路径点，那么清除，从下一个路径点继续
+                if (Vector2.Distance(transform.position, pathList.First.Value) <= reachDistance)
+                {
+                    // Debug.Log("到达路径点");
+                    pathList.RemoveFirst();
+                }
+                
+                yield return new WaitForSeconds(interval);
+            }
+            
+            btNode.Stop();
+            
+            // yield return new WaitForSeconds(0.1f);
         }
         
-        /// <summary>
-        /// 计算提前量命中点。
-        /// 返回 true 表示有解，p 为预测命中位置。
-        /// </summary>
-        public static bool GetLeadPosition(
-            Vector2 Apos, float bulletSpeed,
-            Vector2 Bpos, Vector2 Bvel,
-            out Vector2 p)
-        {
-            Vector2 r = Bpos - Apos;
-            float a = Vector2.Dot(Bvel, Bvel) - bulletSpeed * bulletSpeed;
-            float b = 2f * Vector2.Dot(r, Bvel);
-            float c = Vector2.Dot(r, r);
-
-            float discriminant = b * b - 4f * a * c;
-
-            if (discriminant < 0f)
-            {
-                p = Vector2.zero;
-                return false; // 无解，追不上
-            }
-
-            float sqrt = Mathf.Sqrt(discriminant);
-
-            // 两个可能的时间
-            float t1 = (-b + sqrt) / (2f * a);
-            float t2 = (-b - sqrt) / (2f * a);
-
-            // 取最小的正时间
-            float t = Mathf.Min(t1, t2);
-            if (t < 0f)
-                t = Mathf.Max(t1, t2);
-
-            if (t < 0f)
-            {
-                p = Vector2.zero;
-                return false; // 目标在背后，无法命中
-            }
-
-            // 命中点
-            p = Bpos + Bvel * t;
-            return true;
-        }
         
         
         // 一定时间后执行某个函数的协程
@@ -305,20 +352,21 @@ namespace Project_I
         
         void OnDrawGizmos()
         {
-            /*if (debugPath == null) return;
+            if (debugPath == null) return;
+            if (LayerDataManager.Instance == null) return;
             
             if (gameObject.layer == LayerDataManager.Instance.enemyLayer)
             {
-                /*Gizmos.color = Color.red;
+                Gizmos.color = Color.red;
                 for (int i = 0; i < debugPath.Count - 1; i++)
-                    Gizmos.DrawLine(debugPath[i], debugPath[i + 1]);#1#
+                    Gizmos.DrawLine(debugPath[i], debugPath[i + 1]);
             }
             else
             {
-                /*Gizmos.color = Color.green;
+                Gizmos.color = Color.green;
                 for (int i = 0; i < debugPath.Count - 1; i++)
-                    Gizmos.DrawLine(debugPath[i], debugPath[i + 1]);#1#
-            }*/
+                    Gizmos.DrawLine(debugPath[i], debugPath[i + 1]);
+            }
         }
     }
         

@@ -32,7 +32,7 @@ namespace Project_I.UI
 
         private void OnEnemyRegistered(EventSystem.EnemyRegisteredEvent e)
         {
-            Debug.Log($"新敌人：{e.Enemy.name}");
+            // Debug.Log($"新敌人：{e.Enemy.name}");
             
             // 添加 UI 元素，加入为子物体
             GameObject newEnemyPointerUI = Instantiate(enemyPointUI, transform);

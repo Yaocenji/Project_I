@@ -5005,6 +5005,10 @@ PrefabInstance:
       propertyPath: aircraftController
       value: 
       objectReference: {fileID: 6805388253120936610}
+    - target: {fileID: 3390105929778380251, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: Invincible
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4984204296922973415, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_Name
       value: Player

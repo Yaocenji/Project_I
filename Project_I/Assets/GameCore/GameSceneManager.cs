@@ -98,7 +98,7 @@ public class GameSceneManager : MonoBehaviour
     {
         if (en.layer == LayerDataManager.Instance.enemyLayer)
         {
-            Debug.Log("注册敌方单位");
+            // Debug.Log("注册敌方单位");
             _enemy.Add(en);
             PartyBTransforms.Add(en.transform);
             EventBus.Publish(new EventSystem.EnemyRegisteredEvent(en));

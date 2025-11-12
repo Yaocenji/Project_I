@@ -76,7 +76,7 @@ namespace Project_I.Bot
 
         private NodeStatus Tick()
         {
-            // 当前正在运行动作节点
+            /*// 当前正在运行动作节点
             if (actingNode != null)
             {
                 if (actingNode.CanBeInterrupted){
@@ -89,9 +89,54 @@ namespace Project_I.Bot
                     // 否则就啥也不干
                     return NodeStatus.FAILURE;
                 }
-            }
+            }*/
             // 没有运行中的节点
             return root.Tick();
+        }
+
+        // 动作节点 申请运行权
+        public bool ApplyActionNodeExecute(ActionNode acNode)
+        {
+            // 特判：如果是自身，那么不予管理
+            if (actingNode == acNode)
+                return false;
+            
+            // 当前没有正在执行的动作节点
+            if (actingNode == null)
+            {
+                // 给予运行权
+                actingNode = acNode;
+                return true;
+            }
+            // 当前有正在运行的动作节点
+            else
+            {
+                // 如果可以打断
+                if (actingNode.CanBeInterrupted)
+                {
+                    Debug.Log("申请成功：打断了当前正在运行的节点");
+                    actingNode.Interrupt();
+                    actingNode = acNode;
+                    return true;
+                }
+                // 若不可打断
+                else
+                {
+                    Debug.Log("申请失败：当前正在运行的节点无法被打断");
+                    return false;
+                }
+            }
+        }
+        // 动作节点：释放运行权
+        public bool ReleaseActionNodeExecute(ActionNode acNode)
+        {
+            if (actingNode == acNode)
+            {
+                actingNode = null;
+                return true;
+            }
+
+            return false;
         }
 
         private void SetAllStatusRunning()

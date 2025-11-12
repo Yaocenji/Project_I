@@ -10,6 +10,7 @@ namespace Project_I
 
     public class UnitHPController : MonoBehaviour
     {
+        [LabelText("无敌")] public bool Invincible = false;
         [LabelText("血量")] public float hp = 20.0f;
 
         private PlayerController player;
@@ -23,11 +24,14 @@ namespace Project_I
 
         public void Hit(float damage)
         {
-            hp -= damage;
-            if (hp <= 0)
+            if (!Invincible)
             {
-                hp = 0;
-                Die();
+                hp -= damage;
+                if (hp <= 0)
+                {
+                    hp = 0;
+                    Die();
+                }
             }
         }
 
