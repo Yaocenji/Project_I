@@ -1,0 +1,241 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel ClearGridCounter
+#pragma kernel GridCountEdge
+#pragma kernel GpuPrefix_ScanGroup
+#pragma kernel GpuPrefix_ScanBlockGroup
+#pragma kernel GpuPrefix_DownBlockGroup
+#pragma kernel GpuPrefix_DownGroup
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+// RWTexture2D<float4> Result;
+// 网格信息：
+float cellSize;
+int gridHorizonalNumber;
+int gridVerticalNumber;
+float2 gridZero;
+
+int shadowedPolygonNumber;
+RWStructuredBuffer<float4> shadowedPolygon;
+int gridNumber;
+RWStructuredBuffer<uint> gridCounter;
+
+/*
+ * 第零步操作：清空gridCounter
+ * 需要：
+ * gridNumber：全局的grid cell数量
+ * gridCounter：用于计数的buffer
+ */
+RWStructuredBuffer<uint> gridCounter_ClearGridCounter;  // 就是gridCounter，为了规范，每个着色器kernel声明一个自己的
+[numthreads(256, 1, 1)]
+void ClearGridCounter (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < gridNumber)
+        gridCounter_ClearGridCounter[id.x] = 0;
+}
+
+/*
+ * 第一步的操作：一个kernel对应一条shadow polygon edge
+ * 对每条edge，光栅化计算其跨越了哪些单元网格，在涉及的单元网格计数器里++记录
+ * 为下一步：GPU前缀和做准备
+ * 
+ * 需要：
+ * gridNumber：全局的grid cell数量
+ * gridCounter：用于计数的buffer
+ */
+StructuredBuffer<float4> shadowedPolygon_GridCountEdge;  // 就是shadowedPolygon，只读版本更高性能
+RWStructuredBuffer<uint> gridCounter_GridCountEdge;  // 就是gridCounter，为了规范，每个着色器kernel声明一个自己的
+[numthreads(256,1,1)]
+void GridCountEdge (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= shadowedPolygonNumber)
+        return;
+
+    float4 edge = shadowedPolygon_GridCountEdge[id.x];
+    float2 p1 = edge.xy; // 起点
+    float2 p2 = edge.zw; // 终点
+
+    // 1. 初始化
+    float2 dir = p2 - p1;
+    
+    // 计算起点和终点所在的cell坐标
+    // 注意：从世界坐标到网格坐标的转换
+    int2 startCell = int2(floor((p1 - gridZero) / cellSize));
+    int2 endCell = int2(floor((p2 - gridZero) / cellSize));
+
+    // 当前cell从起点开始
+    int2 currentCell = startCell;
+
+    // 2. 计算步进方向
+    int2 step = int2(sign(dir.x), sign(dir.y));
+
+    // 3. 计算 tDelta
+    // tDelta 表示射线在X或Y方向上穿过一个cell的宽度/高度需要多少“时间t”
+    // (t 是 P = p1 + t * dir 中的参数 t)
+    // 为避免除以0，我们给一个极大值
+    float2 tDelta = abs(cellSize / dir);
+    if (dir.x == 0.0f) tDelta.x = 1.0e10f;
+    if (dir.y == 0.0f) tDelta.y = 1.0e10f;
+
+    // 4. 计算 tMax
+    // tMax 表示射线从起点到达第一个X和Y方向的网格边界需要多少“时间t”
+    float2 tMax;
+    float2 signedDist = (step > 0) ? (1.0f - frac((p1 - gridZero) / cellSize))
+                                   : (frac((p1 - gridZero) / cellSize));
+    
+    // 如果frac的结果是0（正好在网格线上），且步进为负，需要特殊处理为1
+    if (step.x < 0 && signedDist.x == 0.0) signedDist.x = 1.0;
+    if (step.y < 0 && signedDist.y == 0.0) signedDist.y = 1.0;
+
+    tMax = tDelta * signedDist;
+
+    // 对水平/垂直线进行修正
+    if (dir.x == 0.0f) tMax.x = 1.0e10f;
+    if (dir.y == 0.0f) tMax.y = 1.0e10f;
+
+    // 5. 遍历循环
+    // 循环直到我们处理完终点所在的cell
+    while(true)
+    {
+        // 将当前有效的cell坐标添加到输出缓冲区
+        // 检查cell坐标是否在网格范围内
+        if (currentCell.x >= 0 && currentCell.x < gridHorizonalNumber &&
+            currentCell.y >= 0 && currentCell.y < gridVerticalNumber)
+        {
+            int idx = currentCell.y * gridHorizonalNumber + currentCell.x;
+            InterlockedAdd(gridCounter_GridCountEdge[idx], 1);
+        }
+
+        // 如果已经到达终点cell，则退出循环
+        if (all(currentCell == endCell))
+        {
+            break;
+        }
+
+        // 核心步进逻辑：
+        // 比较 tMax.x 和 tMax.y，选择更小的一个方向前进
+        if (tMax.x < tMax.y)
+        {
+            tMax.x += tDelta.x;
+            currentCell.x += step.x;
+        }
+        else
+        {
+            tMax.y += tDelta.y;
+            currentCell.y += step.y;
+        }
+    }
+}
+
+
+/*
+ * 第二步的操作：GPU前缀和 ，开辟的线程数量在 gridNumber 的一半
+ *
+ * GPU前缀和的第一步：
+ * gridCounter 按照256一个，分为n个block
+ * 分别计算每个block内部的前缀和
+ */
+#define GROUP_SIZE 256
+int groupNumber_GpuPrefix_ScanGroup;    // 总共的组数
+groupshared uint gridCounter_GroupCopy[GROUP_SIZE];
+
+RWStructuredBuffer<uint> data_GpuPrefix_ScanGroup;  // 待前缀和的数组
+RWStructuredBuffer<uint> sum_GpuPrefix_ScanGroup;  // 存储每个组的总和
+
+[numthreads(GROUP_SIZE,1,1)]           // 全局线程ID                       当前所在组的三维id                当前线程在组内的一维展平id
+void GpuPrefix_ScanGroup (uint3 id : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint groupThreadIndex : SV_GroupIndex)
+{
+    // 先将buffer对应工作区的内容，复制到组共享内存，作一副本
+    gridCounter_GroupCopy[groupThreadIndex] = id.x < gridNumber ? data_GpuPrefix_ScanGroup[id.x] : 0;
+    GroupMemoryBarrierWithGroupSync();
+
+    // 基于副本进行 多次循环
+    int interval = 1;
+    while (interval < GROUP_SIZE)
+    {
+        uint newValue = gridCounter_GroupCopy[groupThreadIndex] +
+            (groupThreadIndex >= interval ? gridCounter_GroupCopy[groupThreadIndex - interval] : 0);
+        GroupMemoryBarrierWithGroupSync();
+        gridCounter_GroupCopy[groupThreadIndex] = newValue;
+        GroupMemoryBarrierWithGroupSync();
+        interval = (interval << 1);
+    }
+
+    // 组内前缀和完成
+    // 存储每个组的总和
+    int gID = id.x / GROUP_SIZE;
+    if (gID < groupNumber_GpuPrefix_ScanGroup && groupThreadIndex == 0)
+        sum_GpuPrefix_ScanGroup[gID] = gridCounter_GroupCopy[GROUP_SIZE - 1];
+
+    // 回写data
+    if (id.x < gridNumber)
+        data_GpuPrefix_ScanGroup[id.x] = gridCounter_GroupCopy[groupThreadIndex];
+}
+
+
+
+RWStructuredBuffer<uint> sum_GpuPrefix_ScanBlockGroup;  // 存储组的源数据、总和（是一个256叉树）
+int data_offset;
+int data_number;
+int sum_offset;
+int sum_number;
+[numthreads(GROUP_SIZE,1,1)]           // 全局线程ID                       当前所在组的三维id                当前线程在组内的一维展平id
+void GpuPrefix_ScanBlockGroup (uint3 id : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint groupThreadIndex : SV_GroupIndex)
+{
+    // 先将buffer对应工作区的内容，复制到组共享内存，作一副本
+    gridCounter_GroupCopy[groupThreadIndex] = id.x < data_number ? sum_GpuPrefix_ScanBlockGroup[id.x + data_offset] : 0;
+    GroupMemoryBarrierWithGroupSync();
+
+    // 基于副本进行 多次循环
+    int interval = 1;
+    while (interval < GROUP_SIZE)
+    {
+        uint newValue = gridCounter_GroupCopy[groupThreadIndex] +
+            (groupThreadIndex >= interval ? gridCounter_GroupCopy[groupThreadIndex - interval] : 0);
+        GroupMemoryBarrierWithGroupSync();
+        gridCounter_GroupCopy[groupThreadIndex] = newValue;
+        GroupMemoryBarrierWithGroupSync();
+        interval = (interval << 1);
+    }
+
+    // 组内前缀和完成
+    // 存储每个组的总和
+    if (groupID.x < sum_number && groupThreadIndex == GROUP_SIZE - 1)
+        sum_GpuPrefix_ScanBlockGroup[groupID.x + sum_offset] = gridCounter_GroupCopy[groupThreadIndex];
+
+    // 回写data
+    if (id.x < data_number)
+        sum_GpuPrefix_ScanBlockGroup[id.x + data_offset] = gridCounter_GroupCopy[groupThreadIndex];
+}
+
+
+
+RWStructuredBuffer<uint> sum_GpuPrefix_DownBlockGroup;  // 存储组的源数据、总和（是一个256叉树）
+[numthreads(GROUP_SIZE,1,1)]
+void GpuPrefix_DownBlockGroup (uint3 id : SV_DispatchThreadID, uint3 groupID : SV_GroupID )
+{
+    int realGroupIdx = groupID.x - 1;
+    if (realGroupIdx >= 0 && realGroupIdx < sum_number && id.x < data_number)
+    {
+        uint sumValue = sum_GpuPrefix_DownBlockGroup[realGroupIdx + sum_offset];
+        sum_GpuPrefix_DownBlockGroup[id.x + data_offset] += sumValue;
+    }
+}
+
+
+
+int groupNumber_GpuPrefix_DownGroup;    // 总共的组数
+RWStructuredBuffer<uint> data_GpuPrefix_DownGroup;  // 待前缀和的数组 
+RWStructuredBuffer<uint> sum_GpuPrefix_DownGroup;  // 存储组的源数据、总和（是一个256叉树）
+[numthreads(GROUP_SIZE,1,1)]
+void GpuPrefix_DownGroup (uint3 id : SV_DispatchThreadID, uint3 groupID : SV_GroupID )
+{
+    int realGroupIdx = groupID.x - 1;
+    if (realGroupIdx >= 0 && realGroupIdx < groupNumber_GpuPrefix_DownGroup && id.x < gridNumber)
+    {
+        uint sumValue = sum_GpuPrefix_DownGroup[realGroupIdx];
+        data_GpuPrefix_DownGroup[id.x] += sumValue;
+        //data_GpuPrefix_DownGroup[id.x] = 3;
+    }
+    // 
+}

@@ -223,7 +223,7 @@ ParticleSystem:
       serializedVersion: 2
       minMaxState: 0
       minColor: {r: 1, g: 1, b: 1, a: 1}
-      maxColor: {r: 1, g: 1, b: 1, a: 1}
+      maxColor: {r: 0, g: 1, b: 0, a: 1}
       maxGradient:
         serializedVersion: 2
         key0: {r: 1, g: 1, b: 1, a: 1}
@@ -1300,7 +1300,7 @@ ParticleSystem:
         m_RotationOrder: 4
     separateAxes: 0
   ColorModule:
-    enabled: 1
+    enabled: 0
     gradient:
       serializedVersion: 2
       minMaxState: 1
@@ -4953,6 +4953,14 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 6
       objectReference: {fileID: 0}
+    - target: {fileID: 659080532325613899, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: m_Size.x
+      value: 1.67
+      objectReference: {fileID: 0}
+    - target: {fileID: 659080532325613899, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: m_Size.y
+      value: 0.69
+      objectReference: {fileID: 0}
     - target: {fileID: 927522546473796151, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -5067,15 +5075,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6712319792098207423, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_Color.b
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6712319792098207423, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
-      propertyPath: m_Color.g
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6712319792098207423, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: m_Color.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6712319792098207423, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_Color.r
-      value: 0.36229277
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7644870089936524281, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.293
+      objectReference: {fileID: 0}
+    - target: {fileID: 8710052032765929935, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: m_Size.x
+      value: 1.11
+      objectReference: {fileID: 0}
+    - target: {fileID: 8710052032765929935, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: m_Size.y
+      value: 0.51
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -5096,7 +5116,45 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4984204296922973415, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3905397144771315387}
+    - targetCorrespondingSourceObject: {fileID: 259167649483481451, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7907112064384106641}
   m_SourcePrefab: {fileID: 100100000, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+--- !u!1 &121418387829654172 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 259167649483481451, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+  m_PrefabInstance: {fileID: 159845882806002679}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7907112064384106641
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 121418387829654172}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7db70e0ea77f5ac47a8f4565a9406397, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_ShadowGroup: 0
+  m_ComponentVersion: 1
+  m_HasRenderer: 1
+  m_UseRendererSilhouette: 1
+  m_CastsShadows: 1
+  m_SelfShadows: 0
+  m_ApplyToSortingLayers: 00000000
+  m_ShapePath:
+  - {x: -0.5622584, y: -0.29746422, z: 0}
+  - {x: -0.022054227, y: 0.5719059, z: 0}
+  - {x: 0.017847506, y: 0.57444245, z: 0}
+  - {x: 0.5500758, y: -0.30127853, z: 0}
+  m_ShapePathHash: -178804119
+  m_Mesh: {fileID: 0}
+  m_InstanceId: 50110
+  m_LocalBounds:
+    m_Center: {x: -0.0060912967, y: 0.13658196, z: 0}
+    m_Extent: {x: 0.5561671, y: 0.4378605, z: 0}
 --- !u!4 &1074348396741484992 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 927522546473796151, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
@@ -5131,8 +5189,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d981ece1d0e6aa94c88f96b804a81f82, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  aimingCameraDistance: 16
-  aimingCameraSize: 16
+  aimingCameraDistance: 30
+  aimingCameraSize: 30
   aimingMouseSensitivity: 1
   aimingTimeScale: 1
   gunBullet: {fileID: 3944650675118432336, guid: 9340f7aca2f9381488eb27c0dafc1778, type: 3}

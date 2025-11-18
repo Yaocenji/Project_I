@@ -21,6 +21,10 @@ namespace Project_I.UI
         [Title("避障UI显示参数")]
         [LabelText("UI图")]
         public Image uiImage;
+        [LabelText("UI线左")]
+        public UILineRenderer uiLineRendererLeft;
+        [LabelText("UI线左")]
+        public UILineRenderer uiLineRendererRight;
         [LabelText("UI最大像素距离")]
         public int maxDistanceUI = 300;
         [LabelText("UI最小像素距离")]
@@ -40,6 +44,8 @@ namespace Project_I.UI
         
         // 记录所有的碰撞
         private List<RaycastHit2D> hits = new List<RaycastHit2D>();
+        private List<RaycastHit2D> leftHits = new List<RaycastHit2D>();
+        private List<RaycastHit2D> rightHits = new List<RaycastHit2D>();
         private List<int> angles = new List<int>();
         
         private void Start()
@@ -60,6 +66,8 @@ namespace Project_I.UI
             
             // 初始化准备
             hits.Clear();
+            leftHits.Clear();
+            rightHits.Clear();
             angles.Clear();
             
             // 当前速度方向
@@ -81,6 +89,32 @@ namespace Project_I.UI
                 {
                     hits.Add(hit);
                     angles.Add(angle);
+                }
+            }
+
+            
+            for (int angle = -detectedAngle; angle < -1; angle += detectedAngleInterval)
+            {
+                Vector2 dir = Quaternion.Euler(0, 0, angle) * forwardDir;
+
+                RaycastHit2D hit = Physics2D.Raycast(playerTransform.position, dir,
+                    detectedDistance, LayerDataManager.Instance.groundLayerMask);
+                // 存在碰撞点
+                if (hit.collider != null)
+                {
+                    leftHits.Add(hit);
+                }
+            }
+            for (int angle = 1; angle <= detectedAngle; angle += detectedAngleInterval)
+            {
+                Vector2 dir = Quaternion.Euler(0, 0, angle) * forwardDir;
+
+                RaycastHit2D hit = Physics2D.Raycast(playerTransform.position, dir,
+                    detectedDistance, LayerDataManager.Instance.groundLayerMask);
+                // 存在碰撞点
+                if (hit.collider != null)
+                {
+                    rightHits.Add(hit);
                 }
             }
             
@@ -115,18 +149,78 @@ namespace Project_I.UI
             thisPosition = Utilities.GenericMath.SpringApproach(thisPosition, targetPosition, 0.05f, Time.deltaTime / Time.fixedDeltaTime);
             thisAngle = Utilities.GenericMath.SpringApproach(thisAngle, targetAngle, 0.5f, Time.deltaTime / Time.fixedDeltaTime);
             
-            uiImage.color = new Color(colorUI.r, colorUI.g, colorUI.b, alpha);
+            uiImage.color = new Color(colorUI.r, colorUI.g, colorUI.b, 0);
             uiRectTransform.anchoredPosition = thisPosition;
             uiRectTransform.rotation = Quaternion.Euler(0, 0, thisAngle);
+            
+            
+            // 画线
+            List<Vector2> pointsLeft = new List<Vector2>();
+            List<Color> colorsLeft = new List<Color>();
+            foreach (RaycastHit2D hit in leftHits)
+            {
+                float dist =  Vector2.Distance(hit.point, playerTransform.position);
+                float relatDist = Mathf.Clamp01(dist / detectedDistance);
+                
+                float angle = Vector2.Angle(forwardDir, (hit.point - (Vector2)playerTransform.position).normalized);
+                float relatAngle = Mathf.Clamp01(angle / detectedAngle);
+                
+                float currAlpha = (1 - relatDist) * (1 - relatAngle);
+                currAlpha = Mathf.Sqrt(currAlpha);
+                
+                colorsLeft.Add(new Color(colorUI.r, colorUI.g, colorUI.b, currAlpha));
+                
+                float currUIScreenDistance = Mathf.Lerp(minDistanceUI, maxDistanceUI, relatDist);
+                Vector2 currUIScreenPos = (hit.point - (Vector2)playerTransform.position).normalized * currUIScreenDistance;
+
+                pointsLeft.Add(currUIScreenPos);
+            }
+            uiLineRendererLeft.cornerSmoothness = 3;
+            ((Graphic)uiLineRendererLeft).color = colorUI;
+            uiLineRendererLeft.thickness = 25;
+            uiLineRendererLeft.perPointColor = colorsLeft;
+            uiLineRendererLeft.SetPoints(pointsLeft);
+            
+            
+            List<Vector2> pointsRight = new List<Vector2>();
+            List<Color> colorsRight = new List<Color>();
+            foreach (RaycastHit2D hit in rightHits)
+            {
+                float dist =  Vector2.Distance(hit.point, playerTransform.position);
+                float relatDist = Mathf.Clamp01(dist / detectedDistance);
+                
+                float angle = Vector2.Angle(forwardDir, (hit.point - (Vector2)playerTransform.position).normalized);
+                float relatAngle = Mathf.Clamp01(angle / detectedAngle);
+                
+                float currAlpha = (1 - relatDist) * (1 - relatAngle);
+                currAlpha = Mathf.Sqrt(currAlpha);
+                
+                colorsRight.Add(new Color(colorUI.r, colorUI.g, colorUI.b, currAlpha));
+                
+                float currUIScreenDistance = Mathf.Lerp(minDistanceUI, maxDistanceUI, relatDist);
+                Vector2 currUIScreenPos = (hit.point - (Vector2)playerTransform.position).normalized * currUIScreenDistance;
+
+                pointsRight.Add(currUIScreenPos);
+            }
+            uiLineRendererRight.cornerSmoothness = 3;
+            ((Graphic)uiLineRendererRight).color = colorUI;
+            uiLineRendererRight.thickness = 25;
+            uiLineRendererRight.perPointColor = colorsRight;
+            uiLineRendererRight.SetPoints(pointsRight);
         }
 
         private void OnDrawGizmos()
         {
             if (GameSceneManager.Instance == null) return;
 
-            foreach (var hit in hits)
+            foreach (var hit in leftHits)
             {
                 Gizmos.color = Color.blue;
+                Gizmos.DrawLine(playerTransform.position, hit.point);
+            }
+            foreach (var hit in rightHits)
+            {
+                Gizmos.color = Color.magenta;
                 Gizmos.DrawLine(playerTransform.position, hit.point);
             }
         }

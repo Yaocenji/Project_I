@@ -51,9 +51,9 @@ namespace Project_I
         public Transform targetUnitTransform;
         
         [NonSerialized] // 剩余可用 追踪动作时间
-        public float traceRemainTime = 8;
+        public float traceRemainTime = 16;
         [NonSerialized] // 追踪动作冷却前最长时间
-        public const float maxTraceTime = 8;
+        public const float maxTraceTime = 16;
         
         [NonSerialized] // 剩余可用 开火动作时间
         public float fireRemainTime = 5;

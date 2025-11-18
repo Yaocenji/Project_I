@@ -62,10 +62,16 @@ namespace Project_I.UI
             // 速度系数
             float sp = targetRigidbody2D.velocity.magnitude;
             float tmpT = 1.0f - Mathf.Exp(-0.05f * sp);
+            
+            // 距离系数
+            float tmpD = 1.0f - Mathf.Exp(-0.005f * (targetPos - thisPos).magnitude);
+            // Debug.Log("ThisPos: " + thisPos + "TargPos: " + targetPos);
+            // Debug.Log("tmpd: " + tmpD);
+            
             // 设置动态地inner、outer半径
-            float maxRadiusParam = 1.5f;
-            dynamicInnerRadius = innerRadius + innerRadius * (maxRadiusParam - 1) * tmpT;
-            dynamicOuterRadius = outerRadius + outerRadius * (maxRadiusParam - 1) * tmpT;
+            float maxRadiusParam = 2.5f;
+            dynamicInnerRadius = innerRadius + innerRadius * (maxRadiusParam - 1) * tmpD;
+            dynamicOuterRadius = outerRadius + outerRadius * (maxRadiusParam - 1) * tmpD;
             
             // 设置图标位置
             iconRectTransform.anchoredPosition = direction * dynamicOuterRadius;
@@ -93,7 +99,7 @@ namespace Project_I.UI
             }
             
             icon.color = new Color(color.r, color.g, color.b, alpha);
-            line.color = new Color(color.r, color.g, color.b, alpha);
+            ((Graphic)line).color = new Color(color.r, color.g, color.b, alpha);
             
             // 线的粗细：随距离变化
             float maxThicknessParam = 1.75f;

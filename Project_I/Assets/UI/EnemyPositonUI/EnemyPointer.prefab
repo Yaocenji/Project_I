@@ -52,10 +52,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   icon: {fileID: 9174926857356754705}
   line: {fileID: 4133583903606599900}
-  innerRadius: 300
-  outerRadius: 425
+  innerRadius: 150
+  outerRadius: 250
   target: {fileID: 0}
-  color: {r: 0, g: 1, b: 0, a: 1}
+  color: {r: 1, g: 0.216981, b: 0.216981, a: 1}
 --- !u!1 &6041335125027556280
 GameObject:
   m_ObjectHideFlags: 0
@@ -119,6 +119,9 @@ MonoBehaviour:
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   points: []
   thickness: 7
+  perPointThickness: []
+  perPointColor: []
+  cornerSmoothness: 0
 --- !u!1 &7127411229569012440
 GameObject:
   m_ObjectHideFlags: 0
