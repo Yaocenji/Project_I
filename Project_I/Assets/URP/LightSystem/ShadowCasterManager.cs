@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Sirenix.OdinInspector;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
@@ -44,12 +45,12 @@ namespace Project_I.LightSystem
      * 渲染的时候，就只需要在片元着色器里遍历光源，计算方向代表的shadowmap坐标，然后采样判断是否被阴影遮挡即可。
      * 
      */
-
-
-    public struct CellInfo
+    
+    public struct ShadowMapInfo
     {
-        public uint2 offset_count;
-    }
+        public float Depth;
+        public uint Id;
+    };
     
     public class ShadowCasterManager : MonoBehaviour
     {
@@ -59,9 +60,9 @@ namespace Project_I.LightSystem
         [ReadOnly]
         public int shadowedPoligonDataSize = 1024;
         
-        // 核心：线性数据
+        // 核心：边数据
         [HideInInspector]
-        public List<Vector4> shadowedPoligonData;
+        public List<PolygonEdge> shadowedPoligonData;
         
         // 场景中的 shadowed poligon 列表
         private HashSet<ShadowCaster> shadowCasters;
@@ -84,8 +85,17 @@ namespace Project_I.LightSystem
             get => (1 << gridVerticalNumberOM);
         }
         
+        [LabelText("光源的阴影精度（2的幂指数）")]
+        public int shadowMapPrecision = 11;
+        public int shadowMapHorizonalRes
+        {
+            get => (1 << shadowMapPrecision);
+        }
+        
         [LabelText("渲染网格")]
         public bool drawGrid = false;
+        [LabelText("渲染内部网格线")]
+        public bool drawInnerGrid = false;
         
         // 获取二维网格区域的宽
         public float gridHorizonalSize
@@ -114,21 +124,29 @@ namespace Project_I.LightSystem
                 return new Vector4(gridZero.x, gridZero.y, gridHorizonalSize, gridVerticalSize);
             }
         }
-
-        
-        // 点光阴影纹理
-        public ComputeBuffer spotLight_ShadowBuffer;
         
         // grid-info buffer大小
         public int GRID_INFO_BUFFER_SIZE => gridHorizonalNumber * gridVerticalNumber;
-        // grid-info buffer
-        public ComputeBuffer gridInfoBuffer;
         
         // grid-edge pool buffer的大小 预估值
         public const int GRID_EDGE_POOL_BUFFER_MAXSIZE = 1920000;
-        // grid-edge pool buffer，用于存储体素到边的映射的实际数据
-        public ComputeBuffer gridEdgePoolBuffer;
         
+        // shadowMap分辨率
+        public Vector2Int shadowMapResolution
+        {
+            get => new Vector2Int(shadowMapHorizonalRes, LightSystemManager.MAX_SPOTLIGHT_COUNT);
+        }
+        // shadowmap总大小
+        public int shadowMapPixelNumber
+        {
+            get => shadowMapHorizonalRes * LightSystemManager.MAX_SPOTLIGHT_COUNT;
+        }
+        
+        // 点光阴影纹理
+        public ComputeBuffer spotLight_ShadowMap_Buffer;
+        
+        // 当前分配的ID
+        public uint nextID = 1;
         
         private bool initialized = false;
         
@@ -139,22 +157,19 @@ namespace Project_I.LightSystem
             
             Instance = this;
             
-            shadowedPoligonData = new  List<Vector4>();
+            shadowedPoligonData = new  List<PolygonEdge>();
             
             shadowCasters = new HashSet<ShadowCaster>();
             
-            gridInfoBuffer = new ComputeBuffer(GRID_INFO_BUFFER_SIZE, UnsafeUtility.SizeOf<uint2>());
-            gridEdgePoolBuffer = new ComputeBuffer(GRID_EDGE_POOL_BUFFER_MAXSIZE, sizeof(uint));
-            
             // 创建点光的阴影纹理
-            spotLight_ShadowBuffer = new ComputeBuffer(262144 /* 512^2 的数据 */, sizeof(uint) /* 用32位整数表示 */);
-            int[] iniData = new int[262144];
-            for (int i = 0; i < 262144; i++)
-                iniData[i] = Int32.MaxValue;
-            spotLight_ShadowBuffer.SetData(iniData);
+            spotLight_ShadowMap_Buffer = new ComputeBuffer(shadowMapPixelNumber, Marshal.SizeOf<ShadowMapInfo>() /* 用32位浮动点表示 */);
+            float[] iniData = new float[shadowMapPixelNumber];
+            for (int i = 0; i < shadowMapPixelNumber; i++)
+                iniData[i] = 1.0f;
+            spotLight_ShadowMap_Buffer.SetData(iniData);
             
             // 绑定阴影纹理到UAV 1
-            //Graphics.SetRandomWriteTarget(1, spotLight_ShadowBuffer);
+            nextID = 1;
             
             initialized = true;
         }
@@ -167,13 +182,8 @@ namespace Project_I.LightSystem
             shadowCasters.Clear();
             shadowCasters  = null;
             
-            spotLight_ShadowBuffer.Dispose();
-            spotLight_ShadowBuffer =  null;
-            
-            gridInfoBuffer.Dispose();
-            gridEdgePoolBuffer.Dispose();
-            gridInfoBuffer = null;
-            gridEdgePoolBuffer = null;
+            spotLight_ShadowMap_Buffer.Dispose();
+            spotLight_ShadowMap_Buffer =  null;
             
             GC.Collect();
             
@@ -202,7 +212,9 @@ namespace Project_I.LightSystem
             if (shadowCasters != null && !shadowCasters.Contains(shadowCaster))
             {
                 shadowCasters.Add(shadowCaster);
-                Debug.Log("阴影多边形添加成功：" +  shadowCaster.gameObject.name);
+                shadowCaster.scID = nextID;
+                nextID++;
+                Debug.Log("阴影多边形添加成功：" +  shadowCaster.gameObject.name + " id:" + nextID);
             }
         }
         public void UnregisterShadowedPoligon(ShadowCaster shadowCaster)
@@ -225,7 +237,13 @@ namespace Project_I.LightSystem
             shadowedPoligonData.Clear();
             foreach (var caster in shadowCasters)
             {
-                shadowedPoligonData.AddRange(caster.outline);
+                foreach (var edge in caster.outline)
+                {
+                    PolygonEdge polygonEdge = new PolygonEdge();
+                    polygonEdge.Edge =  edge;
+                    polygonEdge.Id = caster.scID;
+                    shadowedPoligonData.Add(polygonEdge);
+                }
             }
         }
         
@@ -242,7 +260,11 @@ namespace Project_I.LightSystem
                     if (i == 0 || i ==  gridHorizonalNumber - 1)
                         Gizmos.color = Color.yellow;
                     else
-                        Gizmos.color = new Color(1, 0, 0, 0.1f);
+                        if (drawInnerGrid)
+                            Gizmos.color = new Color(1, 0, 0, 0.1f);
+                    
+                    if (!drawInnerGrid && i != 0 && i != gridHorizonalNumber - 1)
+                        continue;
                     
                     Gizmos.DrawLine(new Vector3(rect.x + i * cellSize, rect.y, 0),
                         new Vector3(rect.x + i * cellSize, rect.y + rect.w, 0));
@@ -253,7 +275,11 @@ namespace Project_I.LightSystem
                     if (i == 0 || i ==  gridVerticalNumber - 1)
                         Gizmos.color = Color.yellow;
                     else
-                        Gizmos.color = new Color(1, 0, 0, 0.1f);
+                        if (drawInnerGrid)
+                            Gizmos.color = new Color(1, 0, 0, 0.1f);
+                    
+                    if (!drawInnerGrid && i != 0 && i != gridHorizonalNumber - 1)
+                        continue;
                     
                     Gizmos.DrawLine(new Vector3(rect.x, rect.y + i * cellSize, 0),
                         new Vector3(rect.x + rect.z, rect.y + i * cellSize, 0));

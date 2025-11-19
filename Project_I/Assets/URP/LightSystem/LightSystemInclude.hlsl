@@ -1,11 +1,21 @@
 #pragma once
 
+#define MY_PI 3.14159265358979323846
+#define MY_TWO_PI 6.28318530717958647693
+
 // 2D点光源数据
 struct SpotLight2DData
 {
     float4 position_intensity_falloff;
     float4 inoutRadius_inoutAngles;
     float4 color_direction;
+};
+
+// 阴影贴图 数据
+struct ShadowMapInfo
+{
+    float Depth;
+    uint Id;
 };
 
 // 有阴影点光源系列
@@ -84,34 +94,48 @@ float3 GetSpotLightColor(inout SpotLight2DData light_data)
 
 
 // 有阴影点光源的阴影（128*2048的数据：对于至多128个光源，将360°分割为2048份数，记录每份对应的距离）
-// RWStructuredBuffer<int> SpotLight2D_Shadow_Data_Buffer : register(u1);
+StructuredBuffer<ShadowMapInfo> SpotLight2D_ShadowMap_Buffer;
 
 // 根据光源index和方位向量计算阴影的index
-int GetSpotLightShadowBufferIndex(int spotLightIndex, float2 light_2_frag)
+int2 GetSpotLightShadowBufferIndex(int spotLightIndex, float2 light_2_frag)
 {
     // 计算对应的行偏移：
-    int xOffset = spotLightIndex * 128;
-    
+    int xOffset = spotLightIndex;
+
     // 计算对应的列偏移：
+    SpotLight2DData lightData = SpotLight2D_Shadowed_Data_Buffer[spotLightIndex];
+    float2 directionRange = float2(lightData.color_direction.w - lightData.inoutRadius_inoutAngles.w,
+                    lightData.color_direction.w + lightData.inoutRadius_inoutAngles.w);
     // 先算light_2_frag对应的方位角
     light_2_frag = normalize(light_2_frag);
     // 这是方位角（弧度制）
-    float radians = light_2_frag.y >= 0 ? acos(light_2_frag.x) : 2 * PI - acos(light_2_frag.x);
-    radians = clamp(radians, 0, 2 * PI);
+    float radians = light_2_frag.y >= 0 ? acos(light_2_frag.x) : MY_TWO_PI - acos(light_2_frag.x);
+    radians = clamp(radians, 0, MY_TWO_PI);
+    
+    if (radians + MY_TWO_PI >= directionRange.x && radians + MY_TWO_PI <= directionRange.y )
+    {
+        radians += MY_TWO_PI;
+    }
+    if (radians - MY_TWO_PI >= directionRange.x && radians - MY_TWO_PI <= directionRange.y )
+    {
+        radians -= MY_TWO_PI;
+    }
+    
     // 根据方位角，计算2048列中的哪一列（0~2π映射到0~2048）
-    int yOffset = int(radians / (2 * PI) * 2048);
+    int yOffset = (radians >= directionRange.x && radians <= directionRange.y ) ?
+        round((radians - directionRange.x) / (lightData.inoutRadius_inoutAngles.w * 2) * 2048) : -1;
 
     // 最终结果是相加：
-    return xOffset + yOffset;
+    return int2(xOffset, yOffset);
 }
 
 // 将世界空间距离映射为01定点数距离
-int GetSpotLightDistanceWorld2SpotLight01(inout SpotLight2DData light_data, float distWS)
+uint GetSpotLightDistanceWorld2SpotLight01(inout SpotLight2DData light_data, float distWS)
 {
     // 该光源的最大距离
     float maxRadius = light_data.inoutRadius_inoutAngles.y;
     // 01最大距离
     float dist01 = distWS >= maxRadius ? 1 : distWS / maxRadius;
-    // 将01最大距离乘上int最大值，就是定点表示的01最大值了
-    return int(dist01 * 0x7FFFFFFF);
+    // 将01最大距离乘上uint最大值，就是定点表示的01最大值了
+    return int(dist01 * 0xFFFFFFFF);
 }

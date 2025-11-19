@@ -168,5 +168,18 @@ namespace Project_I.Utilities
         }
     }
     
-    
+    public static class BitCast
+    {
+        // 将 uint 的 32bit 原样重解释成 float
+        public static float UIntToFloat(uint value)
+        {
+            return BitConverter.ToSingle(BitConverter.GetBytes(value), 0);
+        }
+
+        // 将 float 的 32bit 原样重解释成 uint
+        public static uint FloatToUInt(float value)
+        {
+            return BitConverter.ToUInt32(BitConverter.GetBytes(value), 0);
+        }
+    }
 }

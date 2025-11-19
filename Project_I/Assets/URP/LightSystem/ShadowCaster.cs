@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using Sirenix.OdinInspector;
 using UnityEngine;
 
 #if UNITY_EDITOR
@@ -16,20 +18,44 @@ namespace Project_I.LightSystem
         public Vector2 PositionVector;
     }
     
+    public struct PolygonEdge
+    {
+        public Vector4 Edge;
+        public uint Id;
+    }
+    
     [ExecuteAlways]
     [RequireComponent(typeof(SpriteRenderer))]
     public class ShadowCaster : MonoBehaviour
     {
+        [LabelText("是否显示外轮廓")] public bool drawOutline = false;
+        
         [HideInInspector]
         public Vector4[] outline;
         
         private bool registered = false;
+
+        [HideInInspector]
+        public uint scID = 0;
         
+        private SpriteRenderer spriteRenderer;
+        private MaterialPropertyBlock mpb;
+        private MaterialPropertyBlock GetMpb
+        {
+            get
+            {
+                if (mpb == null)
+                    mpb = new MaterialPropertyBlock();
+                return mpb;
+            }
+        }
         
         void OnEnable()
         {
             GenerateOutline(true);
             Register();
+            
+            SetId2Mpb();
         }
 
         private void OnDisable()
@@ -59,7 +85,7 @@ namespace Project_I.LightSystem
         {
             var sprite = GetComponent<SpriteRenderer>().sprite;
             outline = SpriteOutlineExtractor.ExtractOutline(sprite);
-
+            Debug.Log(gameObject.name + " 轮廓线数： " + outline.Length);
             if (useTransform)
             {
                 // 获取二维矩阵
@@ -90,6 +116,19 @@ namespace Project_I.LightSystem
             }
         }
 
+        private void SetId2Mpb()
+        {
+            spriteRenderer = GetComponent<SpriteRenderer>();
+            spriteRenderer.GetPropertyBlock(GetMpb);
+            
+            // 用SetInt传进去会被重新按值转换，所以强转成float传进去
+            GetMpb.SetInt("objId", (int)scID);
+            
+            // Debug.Log("bitFloatID: " + bitFloatID + "\nobjId: " + scID);
+            
+            spriteRenderer.SetPropertyBlock(GetMpb);
+        }
+
         // Update is called once per frame
         void Update()
         {
@@ -101,15 +140,19 @@ namespace Project_I.LightSystem
         {
             if (outline == null)
                 return;
-            foreach (var edge in outline)
+            
+            if (drawOutline)
             {
-                Gizmos.color = Color.blue;
-                Vector3 start = new Vector3(edge.x, edge.y, 0);
-                Vector3 end = new Vector3(edge.z, edge.w, 0);
-                Gizmos.DrawLine(start, end);
-                
-                Vector3 close2End = (start + end * 4) / 5.0f;
-                Gizmos.DrawCube(close2End, new Vector3(0.03f, 0.03f, 0.03f));
+                foreach (var edge in outline)
+                {
+                    Gizmos.color = Color.blue;
+                    Vector3 start = new Vector3(edge.x, edge.y, 0);
+                    Vector3 end = new Vector3(edge.z, edge.w, 0);
+                    Gizmos.DrawLine(start, end);
+
+                    Vector3 close2End = (start + end * 4) / 5.0f;
+                    Gizmos.DrawCube(close2End, new Vector3(0.03f, 0.03f, 0.03f));
+                }
             }
         }
         #endif

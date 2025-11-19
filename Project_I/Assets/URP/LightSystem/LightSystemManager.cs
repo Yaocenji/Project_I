@@ -25,9 +25,11 @@ namespace Project_I.LightSystem
         
         // 有阴影点光源链表
         private LinkedList<SpotLight2D> spotLightsShadowed;
+        public int spotLightShadowedCount =>  spotLightsShadowed.Count;
         
         // 无阴影点光源链表
         private LinkedList<SpotLight2D> spotLightsNoShadowed;
+        public int spotLightNoShadowedCount =>  spotLightsShadowed.Count;
 
         // 有阴影点光源Compute Buffer
         private ComputeBuffer spotLights_Shadowed_Data_Buffer;

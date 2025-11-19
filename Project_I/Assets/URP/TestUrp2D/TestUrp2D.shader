@@ -126,6 +126,12 @@ Shader "Test/TestUrp2D"
 
             #include "Assets/URP/LightSystem/LightSystemInclude.hlsl"
 
+            
+
+            // 调试画板
+            TEXTURE2D(debug_Canvas);
+            SAMPLER(samplerdebug_Canvas);
+            
             //尽量对齐到float4,否则unity底层会自己填padding来对齐,会有空间浪费
             //Align to float4 as much as possible, otherwise the underlying Unity will fill in padding to align, which will waste space
             CBUFFER_START(UnityPerMaterial)
@@ -141,10 +147,28 @@ Shader "Test/TestUrp2D"
             int gridHorizonalNumber;
             int gridVerticalNumber;
             float2 gridZero;
+
+            
+            int shadowMapResolution_X;
+            
+            float4 debug_Canvas_ST;
+            CBUFFER_END
+
+            CBUFFER_START(UnityPerObject)
+            uint objId;
             CBUFFER_END
 
             StructuredBuffer<uint> gridCounter;
             StructuredBuffer<uint> blockCounter;
+
+            struct GridEdgeInfo
+            {
+                uint offset;
+                uint count;
+                uint writePointer;
+            };
+            StructuredBuffer<GridEdgeInfo> gridEdgeInfo;
+            StructuredBuffer<uint> gridEdgePool;
 
             ////GPU Instancing 和SRP Batcher冲突 根据需要确定是否开启
             ////GPU Installing and SRP Batcher conflict, determine whether to enable as needed
@@ -177,6 +201,7 @@ Shader "Test/TestUrp2D"
                 float3 positionWS : TEXCOORD1;
                 float3 normalWS : TEXCOORD2;
                 float3 viewDirWS : TEXCOORD3;
+                uint objectID : TEXCOORD4;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -198,6 +223,7 @@ Shader "Test/TestUrp2D"
                 OUT.viewDirWS = GetCameraPositionWS() - positionInputs.positionWS;
                 OUT.normalWS = normalInputs.normalWS;
                 OUT.uv = TRANSFORM_TEX(IN.uv, _MainTex);
+                OUT.objectID = objId;
                 return OUT;
             }
 
@@ -217,20 +243,67 @@ Shader "Test/TestUrp2D"
                     float2 lightPos = GetSpotLightPosition(lightData);
                     float2 light_2_Frag = IN.positionWS.xy - lightPos;
 
-                    /*int curr01Dist = GetSpotLightDistanceWorld2SpotLight01(lightData, length(light_2_Frag));
-                    int shadowIdx = GetSpotLightShadowBufferIndex(i, light_2_Frag);*/
-                    
-                    /*// 还要写一手阴影数据
-                    #ifdef _Enable_ShadowCast_ON
-                    // 如果当前的深度值比阴影信息里的深度值更近，那么原子最小
-                    if (SpotLight2D_Shadow_Data_Buffer[shadowIdx] > curr01Dist)
-                        InterlockedMin(SpotLight2D_Shadow_Data_Buffer[shadowIdx], curr01Dist);
-                    #endif
+                    float distWS = length(light_2_Frag);
+                    // 距离外的，直接不管
+                    if (distWS >= lightData.inoutRadius_inoutAngles.y)
+                        continue;
 
-                    // 写了一手之后，还有加一手接受阴影
-                    float shadow = SpotLight2D_Shadow_Data_Buffer[shadowIdx] < curr01Dist ? 0.1 : 1;*/
+                    // 这是方位角（弧度制）
+                    float2 dir = normalize(light_2_Frag);
+                    float radi = dir.y >= 0 ? acos(dir.x) : MY_TWO_PI - acos(dir.x);
+                    radi = clamp(radi, 0, MY_TWO_PI);
+                    float2 directionRange = float2(lightData.color_direction.w - lightData.inoutRadius_inoutAngles.w,
+                    lightData.color_direction.w + lightData.inoutRadius_inoutAngles.w);
+                    directionRange = radians(directionRange);
+                    if (radi + MY_TWO_PI >= directionRange.x && radi + MY_TWO_PI <= directionRange.y )
+                    {
+                        radi += MY_TWO_PI;
+                    }
+                    if (radi - MY_TWO_PI >= directionRange.x && radi - MY_TWO_PI <= directionRange.y )
+                    {
+                        radi -= MY_TWO_PI;
+                    }
+
+                    float shadow;
+                    if (radi < directionRange.x && radi > directionRange.y)
+                        shadow = 1.0f;
+                    else
+                    {
+                        float dist = length(light_2_Frag);
+
+                        float samplePosX = (radi - directionRange.x) / (radians(lightData.inoutRadius_inoutAngles.w) * 2) * shadowMapResolution_X;
+
+                        float samplePosX_deci = frac(samplePosX);
+                        
+                        int shadowIdx_Left = int(samplePosX);
+                        int shadowIdx_Right = ceil(samplePosX);
+                        
+                        uint shadowIdxFlatten_Left = i * shadowMapResolution_X + shadowIdx_Left;
+                        uint shadowIdxFlatten_Right = i * shadowMapResolution_X + shadowIdx_Right;
+
+                        
+                        float sampledDepth = SpotLight2D_ShadowMap_Buffer[shadowIdxFlatten_Left].Depth * (1 - samplePosX_deci)
+                                            + SpotLight2D_ShadowMap_Buffer[shadowIdxFlatten_Right].Depth * samplePosX_deci;
+
+                        /*float debugID = SpotLight2D_ShadowMap_Buffer[shadowIdxFlatten_Left].Id * (1 - samplePosX_deci)
+                                            + SpotLight2D_ShadowMap_Buffer[shadowIdxFlatten_Right].Id * samplePosX_deci;*/
+                        
+                        float curr01DepthFloat = clamp(dist / lightData.inoutRadius_inoutAngles.y, 0, 1);
+                        shadow = sampledDepth < curr01DepthFloat ? 0.01 : 1;
+                        // 如果被遮挡了
+                        if (sampledDepth < curr01DepthFloat)
+                        {
+                            if (SpotLight2D_ShadowMap_Buffer[shadowIdxFlatten_Left].Id == IN.objectID &&
+                                SpotLight2D_ShadowMap_Buffer[shadowIdxFlatten_Right].Id == IN.objectID)
+                            {
+                                shadow = 1;
+                            }
+                        }
+
+                        // shadow = debugID / 10.0f;
+                    }
                     
-                    lightColorSum += GetSpotLightColor(lightData) * GetSpotLightIntensity(lightData) * GetSpotLightAttenuationWS(lightData, light_2_Frag);
+                    lightColorSum += shadow * GetSpotLightColor(lightData) * GetSpotLightIntensity(lightData) * GetSpotLightAttenuationWS(lightData, light_2_Frag);
                     
                 }
                 UNITY_LOOP for (int i = 0; i < _SpotLightNoShadowedCount; ++i)
@@ -243,18 +316,25 @@ Shader "Test/TestUrp2D"
 
                 float3 ans = lightColorSum * texColor;
 
+                
                 // debug
                 int2 currCell = int2((IN.positionWS - gridZero) / cellSize);
                 int idx = currCell.y * gridHorizonalNumber + currCell.x;
                 int idx1 = idx / 256.0f;
-                int cnt = blockCounter[idx];
+                float cnt0 = gridCounter[idx] / 10000.0f;
+                float cnt1 = blockCounter[idx1] / 10.0f;
+                float cnt2 = gridEdgeInfo[idx].offset / 100.0f;
+                float cnt3 = gridEdgePool[idx] / 100.0f;
+                float cnt4 = SpotLight2D_ShadowMap_Buffer[idx].Depth;
+                //float3 cnt5 = [currCell].xyz;
+                float3 cnt5 = SAMPLE_TEXTURE2D(debug_Canvas, samplerdebug_Canvas, float2(currCell) / 1024.0f);
                 
-                float3 tmpAns = cnt.xxx;
+                float3 tmpAns = cnt0;
                 if (currCell.x < 0 || currCell.x > gridHorizonalNumber ||
                     currCell.y < 0 || currCell.y > gridVerticalNumber)
                     tmpAns = 0;
                 
-                return float4(tmpAns, 1);
+                return float4(ans, 1);
             }
             ENDHLSL
         }

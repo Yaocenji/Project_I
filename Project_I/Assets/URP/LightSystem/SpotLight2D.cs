@@ -19,7 +19,8 @@ namespace Project_I.LightSystem
     [ExecuteAlways]
     public class SpotLight2D : MonoBehaviour
     {
-        private bool castShadows = false;
+        [HideInInspector]
+        public bool castShadows = false;
         [LabelText("阴影")][ShowInInspector]
         public bool CastShadows
         {

@@ -17,12 +17,26 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
     public ComputeShader shadowSystemCompute;
     
     // 场景所有 shadowed polygon edges
-    public ComputeBuffer shadowedPoligonBuffer;
+    public ComputeBuffer shadowedPolygonBuffer;
     // grid-cell计数buffer
     public ComputeBuffer gridCounterBuffer;
     
     // 中间量GPU前缀和的 block sum 的buffer
     public ComputeBuffer blockSumBuffer;
+    
+    // grid-edge映射 信息
+    private struct GridEdgeInfo
+    {
+        public uint offset;
+        public uint count;
+        public uint writePointer;
+    }
+    public ComputeBuffer gridEdgeInfoBuffer;
+    // grid-edge映射 压缩池
+    public ComputeBuffer gridEdgePoolBuffer;
+    
+    // 调试画板
+    private RenderTexture debugCanvasBuffer;
 
     private struct GpuPrefixIterativeData
     {
@@ -32,18 +46,27 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
         public int sumNumber;
     }
     
+    [ExecuteAlways]
     class CustomRenderPass : ScriptableRenderPass
     {
         // 整个阴影系统使用这个计算着色器
         public ComputeShader shadowSystemCompute;
         
         // 场景所有 shadowed polygon edges
-        public ComputeBuffer shadowedPoligonBuffer;
+        public ComputeBuffer shadowedPolygonBuffer;
         // grid-cell计数buffer
         public ComputeBuffer gridCounterBuffer;
         
         // 中间量GPU前缀和的 block sum 的buffer
         public ComputeBuffer blockSumBuffer;
+        
+        // grid-edge映射 信息
+        public ComputeBuffer gridEdgeInfoBuffer;
+        // grid-edge映射 压缩池
+        public ComputeBuffer gridEdgePoolBuffer;
+        
+        // 调试画板
+        public RenderTexture debugCanvasBuffer;
         
         // 预先获取资产的id
         private static readonly int CellSizeProperty = Shader.PropertyToID("cellSize");
@@ -56,13 +79,21 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
         private static readonly int GridNumberProperty = Shader.PropertyToID("gridNumber");
         private static readonly int GridCounterProperty = Shader.PropertyToID("gridCounter");
         private static readonly int BlockCounterProperty = Shader.PropertyToID("blockCounter");
+        private static readonly int gridEdgeInfoProperty = Shader.PropertyToID("gridEdgeInfo");
+        private static readonly int gridEdgePoolProperty = Shader.PropertyToID("gridEdgePool");
+        private static readonly int spotLightShadowMapProperty = Shader.PropertyToID("SpotLight2D_ShadowMap_Buffer");
+        
+        private static readonly int debug_CanvasProperty = Shader.PropertyToID("debug_Canvas");
+        
         
         // 第0步清空用的
         private static readonly int gridCounter_ClearGridCounter_Property = Shader.PropertyToID("gridCounter_ClearGridCounter");
         
+        
         // 第一步计数
         private static readonly int shadowedPolygon_GridCountEdge_Property = Shader.PropertyToID("shadowedPolygon_GridCountEdge");
         private static readonly int gridCounter_GridCountEdge_Property = Shader.PropertyToID("gridCounter_GridCountEdge");
+        
         
         // 第二部GPU前缀和
         // 2.1 上扫
@@ -82,12 +113,38 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
         private static readonly int data_GpuPrefix_DownGroup_Property = Shader.PropertyToID("data_GpuPrefix_DownGroup");
         private static readonly int groupNumber_GpuPrefix_DownGroup_Property = Shader.PropertyToID("groupNumber_GpuPrefix_DownGroup");
         
+        
+        // 第三步：计算grid-edge-info
+        private static readonly int gridCounterPrefixed_Property = Shader.PropertyToID("gridCounterPrefixed");
+        private static readonly int gridEdgeInfo_Property = Shader.PropertyToID("gridEdgeInfo");
+        
+        
+        // 第四部：压池
+        private static readonly int shadowedPolygon_CompressToPool_Property = Shader.PropertyToID("shadowedPolygon_CompressToPool");
+        private static readonly int gridEdgeInfo_CompressToPool_Property = Shader.PropertyToID("gridEdgeInfo_CompressToPool");
+        private static readonly int gridEdgePool_Property = Shader.PropertyToID("gridEdgePool");
+        
+        
+        // 第五步，shadowMap计算
+        private static readonly int spotLightShadowedCount_Property = Shader.PropertyToID("_SpotLightShadowedCount");
+        private static readonly int shadowMapResolutionX_Property = Shader.PropertyToID("shadowMapResolution_X");
+        private static readonly int shadowMapResolutionY_Property = Shader.PropertyToID("shadowMapResolution_Y");
+        
+        private static readonly int shadowedPolygon_ShadowMap_Property = Shader.PropertyToID("shadowedPolygon_ShadowMap");
+        private static readonly int gridEdgeInfo_ShadowMap_Property = Shader.PropertyToID("gridEdgeInfo_ShadowMap");
+        private static readonly int gridEdgePool_ShadowMap_Property = Shader.PropertyToID("gridEdgePool_ShadowMap");
+        private static readonly int spotLight2D_ShadowMap_Buffer_Property = Shader.PropertyToID("SpotLight2D_ShadowMap_Buffer_ShadowMap");
+        
+        // 用于渲染的调试画板
+        private static readonly int debug_Canvas_Property = Shader.PropertyToID("debug_Canvas_ShadowMap");
+        
+        
         // pass前
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
         {
             // 临时的：每帧CPU更新全局polygon信息，这里用SetData传输
-            if(ShadowCasterManager.Instance != null && shadowedPoligonBuffer != null)
-                shadowedPoligonBuffer.SetData(ShadowCasterManager.Instance.shadowedPoligonData);
+            if(ShadowCasterManager.Instance != null && shadowedPolygonBuffer != null)
+                shadowedPolygonBuffer.SetData(ShadowCasterManager.Instance.shadowedPoligonData);
             
             // 此处全局设置是为了debug显示用
             Shader.SetGlobalBuffer(GridCounterProperty, gridCounterBuffer);
@@ -149,7 +206,7 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
             cmd.SetComputeIntParam(shadowSystemCompute, ShadowedPolygonNumberProperty, edgeCount);
             cmd.SetComputeIntParam(shadowSystemCompute, GridNumberProperty, inst.GRID_INFO_BUFFER_SIZE);
             // 绑定buffer
-            cmd.SetComputeBufferParam(shadowSystemCompute, countKernel, shadowedPolygon_GridCountEdge_Property, shadowedPoligonBuffer);
+            cmd.SetComputeBufferParam(shadowSystemCompute, countKernel, shadowedPolygon_GridCountEdge_Property, shadowedPolygonBuffer);
             cmd.SetComputeBufferParam(shadowSystemCompute, countKernel, gridCounter_GridCountEdge_Property, gridCounterBuffer);
             // 调用
             cmd.DispatchCompute(shadowSystemCompute, countKernel, edgeCount / 256 + 1, 1, 1);
@@ -179,7 +236,7 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
             cmd.DispatchCompute(shadowSystemCompute, gpuPrefix_1_Kernel, inst.GRID_INFO_BUFFER_SIZE / 256 + 1, 1, 1);
             
             
-            /*
+            
             // 2.2 上扫
             // 对block的和，也进行相同的操作
             // TODO 把迭代 dataOffset、dataNumber、GroupOffset、GroupNumber的过程变成查表，节省每次计算
@@ -229,10 +286,10 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
                         // 打印Debug信息
                         //Debug.Log("End Calculate Prefix: " + (currGroupOffset + 1));
                         
-                        foreach (GpuPrefixIterativeData currData in iterativeData)
+                        /*foreach (GpuPrefixIterativeData currData in iterativeData)
                         {
                             Debug.Log("dataNumber" + currData.dataNumber + "\ndataOffset" + currData.dataOffset + "\nsumNumber" + currData.sumNumber + "\nsumOffset" + currData.sumOffset);
-                        }
+                        }*/
                         break;
                     }
                     
@@ -245,11 +302,9 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
                     if (currGroupNumber == 0) currGroupNumber = 1;
                 }
             }
-            */
             
             
             // 2.3下扫
-            /*
             int gpuPrefix_3_Kernel = shadowSystemCompute.FindKernel("GpuPrefix_DownBlockGroup");
             // 健壮性检查
             if (gpuPrefix_3_Kernel == -1)
@@ -270,6 +325,7 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
                 // 调用
                 cmd.DispatchCompute(shadowSystemCompute, gpuPrefix_3_Kernel, iterativeData[i].sumNumber, 1, 1);
             }
+            
             // 2.4下扫
             int gpuPrefix_4_Kernel = shadowSystemCompute.FindKernel("GpuPrefix_DownGroup");
             // 健壮性检查
@@ -285,7 +341,71 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
             cmd.SetComputeBufferParam(shadowSystemCompute, gpuPrefix_4_Kernel, sum_GpuPrefix_DownGroup_Property, blockSumBuffer);
             // 调用
             cmd.DispatchCompute(shadowSystemCompute, gpuPrefix_4_Kernel, inst.GRID_INFO_BUFFER_SIZE / 256 + 1, 1, 1);
-            */
+            
+            // GPU前缀和计算完毕
+            /*
+             * 第三部：计算grid-edge映射信息
+             */
+            int gridEdgeInfoKernel = shadowSystemCompute.FindKernel("CalGridEdgeInfo");
+            // 健壮性检查
+            if (gridEdgeInfoKernel == -1)
+            {
+                Debug.LogError("Kernel 'CalGridEdgeInfo' not found in the compute shader.");
+                cmd.EndSample("Grid-Edge Count");
+                CommandBufferPool.Release(cmd);
+                return;
+            }
+            cmd.SetComputeIntParam(shadowSystemCompute, GridNumberProperty, inst.GRID_INFO_BUFFER_SIZE);
+            cmd.SetComputeBufferParam(shadowSystemCompute, gridEdgeInfoKernel, gridCounterPrefixed_Property, gridCounterBuffer);
+            cmd.SetComputeBufferParam(shadowSystemCompute, gridEdgeInfoKernel, gridEdgeInfo_Property, gridEdgeInfoBuffer);
+            // 调用
+            cmd.DispatchCompute(shadowSystemCompute, gridEdgeInfoKernel, inst.GRID_INFO_BUFFER_SIZE / 256 + 1, 1, 1);
+            
+            
+            /*
+             * 第四部 将映射信息压池子
+             */
+            int compressToPoolKernel = shadowSystemCompute.FindKernel("CompressToPool");
+            // 健壮性检查
+            if (compressToPoolKernel == -1)
+            {
+                Debug.LogError("Kernel 'CompressToPool' not found in the compute shader.");
+                cmd.EndSample("Grid-Edge Count");
+                CommandBufferPool.Release(cmd);
+                return;
+            }
+            cmd.SetComputeIntParam(shadowSystemCompute, ShadowedPolygonNumberProperty, edgeCount);
+            cmd.SetComputeBufferParam(shadowSystemCompute, compressToPoolKernel, shadowedPolygon_CompressToPool_Property, shadowedPolygonBuffer);
+            cmd.SetComputeBufferParam(shadowSystemCompute, compressToPoolKernel, gridEdgeInfo_CompressToPool_Property, gridEdgeInfoBuffer);
+            cmd.SetComputeBufferParam(shadowSystemCompute, compressToPoolKernel, gridEdgePool_Property, gridEdgePoolBuffer);
+            // 调用
+            cmd.DispatchCompute(shadowSystemCompute, compressToPoolKernel, edgeCount / 256 + 1, 1, 1);
+            
+            /*
+             * 第五步 shadowmap，启动！
+             */
+            int shadowMapKernel = shadowSystemCompute.FindKernel("ShadowMap");
+            // 健壮性检查
+            if (shadowMapKernel == -1)
+            {
+                Debug.LogError("Kernel 'ShadowMap' not found in the compute shader.");
+                cmd.EndSample("Grid-Edge Count");
+                CommandBufferPool.Release(cmd);
+                return;
+            }
+            // 绑定参数
+            cmd.SetComputeIntParam(shadowSystemCompute, spotLightShadowedCount_Property, LightSystemManager.Instance.spotLightShadowedCount);
+            cmd.SetComputeIntParam(shadowSystemCompute, shadowMapResolutionX_Property, inst.shadowMapResolution.x);
+            cmd.SetComputeIntParam(shadowSystemCompute, shadowMapResolutionY_Property, inst.shadowMapResolution.y);
+            // 绑定数据缓冲
+            cmd.SetComputeBufferParam(shadowSystemCompute, shadowMapKernel, shadowedPolygon_ShadowMap_Property, shadowedPolygonBuffer);
+            cmd.SetComputeBufferParam(shadowSystemCompute, shadowMapKernel, gridEdgeInfo_ShadowMap_Property, gridEdgeInfoBuffer);
+            cmd.SetComputeBufferParam(shadowSystemCompute, shadowMapKernel, gridEdgePool_ShadowMap_Property, gridEdgePoolBuffer);
+            cmd.SetComputeBufferParam(shadowSystemCompute, shadowMapKernel, spotLight2D_ShadowMap_Buffer_Property, inst.spotLight_ShadowMap_Buffer);
+            // debug
+            cmd.SetComputeTextureParam(shadowSystemCompute, shadowMapKernel, debug_Canvas_Property, debugCanvasBuffer);
+            // 调用
+            cmd.DispatchCompute(shadowSystemCompute, shadowMapKernel, inst.shadowMapPixelNumber / 256 + 1, 1, 1);
             
             cmd.EndSample("Grid-Edge Count Sample");
             context.ExecuteCommandBuffer(cmd);
@@ -295,6 +415,15 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
         // pass后
         public override void OnCameraCleanup(CommandBuffer cmd)
         {
+            // 此处全局设置是为了debug显示用
+            Shader.SetGlobalBuffer(GridCounterProperty, gridCounterBuffer);
+            Shader.SetGlobalBuffer(BlockCounterProperty, blockSumBuffer);
+            Shader.SetGlobalBuffer(gridEdgeInfoProperty, gridEdgeInfoBuffer);
+            Shader.SetGlobalBuffer(gridEdgePoolProperty, gridEdgePoolBuffer);
+            Shader.SetGlobalBuffer(spotLightShadowMapProperty, ShadowCasterManager.Instance.spotLight_ShadowMap_Buffer);
+            Shader.SetGlobalTexture(debug_CanvasProperty, debugCanvasBuffer);
+            
+            Shader.SetGlobalInt("shadowMapResolution_X", ShadowCasterManager.Instance.shadowMapResolution.x);
         }
     }
 
@@ -316,10 +445,12 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
         base.Dispose(disposing);
         
         // 避免泄漏
-        shadowedPoligonBuffer?.Release();
+        shadowedPolygonBuffer?.Release();
         gridCounterBuffer?.Release();
         blockSumBuffer?.Release();
-        
+        gridEdgeInfoBuffer?.Release();
+        gridEdgePoolBuffer?.Release();
+        // debugCanvasBuffer?.Release();
     }
 
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
@@ -334,8 +465,21 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
             gridCounterBuffer?.Release();
             gridCounterBuffer = null;
             
-            shadowedPoligonBuffer?.Release();
-            shadowedPoligonBuffer = null;
+            shadowedPolygonBuffer?.Release();
+            shadowedPolygonBuffer = null;
+            
+            blockSumBuffer?.Release();
+            blockSumBuffer = null;
+            
+            gridEdgeInfoBuffer?.Release();
+            gridEdgeInfoBuffer = null;
+            
+            gridEdgePoolBuffer?.Release();
+            gridEdgePoolBuffer = null;
+            
+            /*debugCanvasBuffer?.Release();
+            debugCanvasBuffer = null;*/
+            
             return; // 直接返回，不将 Pass 添加到渲染队列
         }
         
@@ -349,15 +493,15 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
             // 用新的正确尺寸创建 Buffer
             gridCounterBuffer = new ComputeBuffer(inst.GRID_INFO_BUFFER_SIZE, sizeof(int));
         }
-        if (shadowedPoligonBuffer == null || !shadowedPoligonBuffer.IsValid())
+        if (shadowedPolygonBuffer == null || !shadowedPolygonBuffer.IsValid())
         {
             // TODO 动态大小
             
             // 释放旧的（如果存在且有效）
-            shadowedPoligonBuffer?.Release();
+            shadowedPolygonBuffer?.Release();
             
             // 用新的正确尺寸创建 Buffer
-            shadowedPoligonBuffer = new ComputeBuffer(inst.shadowedPoligonDataSize, Marshal.SizeOf<Vector4>());
+            shadowedPolygonBuffer = new ComputeBuffer(inst.shadowedPoligonDataSize, Marshal.SizeOf<PolygonEdge>());
         }
         if (blockSumBuffer == null || !blockSumBuffer.IsValid())
         {
@@ -382,13 +526,42 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
             }
             Debug.Log("Block sum buffer: " + bufferSize);
             // 用新的正确尺寸创建 Buffer
-            blockSumBuffer = new ComputeBuffer((int)currLayerSize, sizeof(int));
+            blockSumBuffer = new ComputeBuffer((int)bufferSize, sizeof(int));
+        }
+
+        if (gridEdgeInfoBuffer == null || !gridEdgeInfoBuffer.IsValid() || gridEdgeInfoBuffer.count != inst.GRID_INFO_BUFFER_SIZE)
+        {
+            gridEdgeInfoBuffer?.Release();
+            gridEdgeInfoBuffer = new ComputeBuffer(inst.GRID_INFO_BUFFER_SIZE, Marshal.SizeOf<GridEdgeInfo>());
+        }
+        if (gridEdgePoolBuffer == null || !gridEdgePoolBuffer.IsValid() || gridEdgePoolBuffer.count != inst.GRID_INFO_BUFFER_SIZE)
+        {
+            gridEdgePoolBuffer?.Release();
+            gridEdgePoolBuffer = new ComputeBuffer(inst.GRID_INFO_BUFFER_SIZE, sizeof(int));
         }
         
+        
+        if (debugCanvasBuffer == null )
+        {
+            //debugCanvasBuffer
+            RenderTextureDescriptor descriptor = new RenderTextureDescriptor(inst.gridHorizonalNumber,
+                inst.gridVerticalNumber,
+                GraphicsFormat.R32G32B32A32_SFloat, 0, 0);
+            descriptor.enableRandomWrite = true;
+            debugCanvasBuffer = new RenderTexture(descriptor);
+            debugCanvasBuffer.Create();
+        }
+        
+        
+        
+        
         // 4. 确保 Pass 持有最新的资源引用
-        m_ScriptablePass.shadowedPoligonBuffer = shadowedPoligonBuffer;
+        m_ScriptablePass.shadowedPolygonBuffer = shadowedPolygonBuffer;
         m_ScriptablePass.gridCounterBuffer = gridCounterBuffer;
         m_ScriptablePass.blockSumBuffer = blockSumBuffer;
+        m_ScriptablePass.gridEdgeInfoBuffer = gridEdgeInfoBuffer;
+        m_ScriptablePass.gridEdgePoolBuffer = gridEdgePoolBuffer;
+        m_ScriptablePass.debugCanvasBuffer = debugCanvasBuffer;
         
         renderer.EnqueuePass(m_ScriptablePass);
     }

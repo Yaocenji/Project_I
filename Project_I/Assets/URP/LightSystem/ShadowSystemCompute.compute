@@ -1,24 +1,84 @@
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel ClearGridCounter
 #pragma kernel GridCountEdge
+
 #pragma kernel GpuPrefix_ScanGroup
 #pragma kernel GpuPrefix_ScanBlockGroup
 #pragma kernel GpuPrefix_DownBlockGroup
 #pragma kernel GpuPrefix_DownGroup
 
-// Create a RenderTexture with enableRandomWrite flag and set it
-// with cs.SetTexture
-// RWTexture2D<float4> Result;
-// 网格信息：
+#pragma kernel CalGridEdgeInfo
+
+#pragma kernel CompressToPool
+
+#pragma kernel ShadowMap
+
+// 边信息
+struct PolygonEdge
+{
+    float4 Edge;
+    uint Id;
+};
+
+// 全局信息
 float cellSize;
 int gridHorizonalNumber;
 int gridVerticalNumber;
 float2 gridZero;
 
 int shadowedPolygonNumber;
-RWStructuredBuffer<float4> shadowedPolygon;
+RWStructuredBuffer<PolygonEdge> shadowedPolygon;
 int gridNumber;
 RWStructuredBuffer<uint> gridCounter;
+
+
+// 预备用函数
+// 右手叉乘
+float cross2D(float2 p1, float2 p2)
+{
+    return p1.x * p2.y - p2.x * p1.y;
+}
+/**
+ * \brief 计算射线与线段的交点。
+ * \param rayStartPos 射线的起点。
+ * \param rayDirection 射线的方向向量 (无需单位化)。
+ * \param p1 线段的起点。
+ * \param p2 线段的终点。
+ * \return float2 类型的交点世界坐标。
+ * \note 此函数基于一个重要前提：调用者已保证射线与线段必然相交。
+ *       因此，函数内省略了对平行线或交点是否在线段范围内的检查，以获得最高性能。
+ */
+float2 GetRaySegmentIntersection(float2 rayStartPos, float2 rayDirection, float2 p1, float2 p2)
+{
+    // 定义线段的向量
+    float2 segmentVec = p2 - p1;
+    
+    // 定义从射线起点到线段起点的向量
+    float2 startToP1 = p1 - rayStartPos;
+
+    // 使用2D向量叉乘来求解参数t
+    // 射线方程: P = rayStartPos + t * rayDirection
+    // 线段方程: P = p1 + u * segmentVec
+    // 联立可得: t * rayDirection - u * segmentVec = p1 - rayStartPos
+    // 通过叉乘消元，可以解出 t:
+    // t = (startToP1 x segmentVec) / (rayDirection x segmentVec)
+    
+    // 2D向量叉乘 (a.x*b.y - a.y*b.x)
+    float denominator = rayDirection.x * segmentVec.y - rayDirection.y * segmentVec.x;
+    float numerator_t = startToP1.x * segmentVec.y - startToP1.y * segmentVec.x;
+    
+    // 计算参数 t
+    // 由于保证了必然相交，分母不会为0
+    float t = numerator_t / denominator;
+    
+    // 根据参数 t 计算交点坐标
+    return rayStartPos + t * rayDirection;
+}
+
+
+
+
+
 
 /*
  * 第零步操作：清空gridCounter
@@ -34,6 +94,7 @@ void ClearGridCounter (uint3 id : SV_DispatchThreadID)
         gridCounter_ClearGridCounter[id.x] = 0;
 }
 
+
 /*
  * 第一步的操作：一个kernel对应一条shadow polygon edge
  * 对每条edge，光栅化计算其跨越了哪些单元网格，在涉及的单元网格计数器里++记录
@@ -43,7 +104,7 @@ void ClearGridCounter (uint3 id : SV_DispatchThreadID)
  * gridNumber：全局的grid cell数量
  * gridCounter：用于计数的buffer
  */
-StructuredBuffer<float4> shadowedPolygon_GridCountEdge;  // 就是shadowedPolygon，只读版本更高性能
+StructuredBuffer<PolygonEdge> shadowedPolygon_GridCountEdge;  // 就是shadowedPolygon，只读版本更高性能
 RWStructuredBuffer<uint> gridCounter_GridCountEdge;  // 就是gridCounter，为了规范，每个着色器kernel声明一个自己的
 [numthreads(256,1,1)]
 void GridCountEdge (uint3 id : SV_DispatchThreadID)
@@ -51,51 +112,31 @@ void GridCountEdge (uint3 id : SV_DispatchThreadID)
     if (id.x >= shadowedPolygonNumber)
         return;
 
-    float4 edge = shadowedPolygon_GridCountEdge[id.x];
-    float2 p1 = edge.xy; // 起点
-    float2 p2 = edge.zw; // 终点
+    float4 edge = shadowedPolygon_GridCountEdge[id.x].Edge;
+    float2 startP = edge.xy; // 起点
+    float2 endP = edge.zw; // 终点
 
     // 1. 初始化
-    float2 dir = p2 - p1;
+    float2 vect = endP - startP;
+    float dist = length(vect);
     
     // 计算起点和终点所在的cell坐标
     // 注意：从世界坐标到网格坐标的转换
-    int2 startCell = int2(floor((p1 - gridZero) / cellSize));
-    int2 endCell = int2(floor((p2 - gridZero) / cellSize));
+    int2 startCell = int2(floor((startP - gridZero) / cellSize));
+    int2 endCell = int2(floor((endP - gridZero) / cellSize));
 
     // 当前cell从起点开始
     int2 currentCell = startCell;
 
-    // 2. 计算步进方向
-    int2 step = int2(sign(dir.x), sign(dir.y));
-
-    // 3. 计算 tDelta
-    // tDelta 表示射线在X或Y方向上穿过一个cell的宽度/高度需要多少“时间t”
-    // (t 是 P = p1 + t * dir 中的参数 t)
-    // 为避免除以0，我们给一个极大值
-    float2 tDelta = abs(cellSize / dir);
-    if (dir.x == 0.0f) tDelta.x = 1.0e10f;
-    if (dir.y == 0.0f) tDelta.y = 1.0e10f;
-
-    // 4. 计算 tMax
-    // tMax 表示射线从起点到达第一个X和Y方向的网格边界需要多少“时间t”
-    float2 tMax;
-    float2 signedDist = (step > 0) ? (1.0f - frac((p1 - gridZero) / cellSize))
-                                   : (frac((p1 - gridZero) / cellSize));
+    // 计算方向
+    int2 step = int2(sign(vect.x), sign(vect.y));
+    // 坑爹sign会输出0
+    if (step.x == 0) step.x = 1;
+    if (step.y == 0) step.y = 1;
     
-    // 如果frac的结果是0（正好在网格线上），且步进为负，需要特殊处理为1
-    if (step.x < 0 && signedDist.x == 0.0) signedDist.x = 1.0;
-    if (step.y < 0 && signedDist.y == 0.0) signedDist.y = 1.0;
-
-    tMax = tDelta * signedDist;
-
-    // 对水平/垂直线进行修正
-    if (dir.x == 0.0f) tMax.x = 1.0e10f;
-    if (dir.y == 0.0f) tMax.y = 1.0e10f;
-
     // 5. 遍历循环
     // 循环直到我们处理完终点所在的cell
-    while(true)
+    for (int i = 0; i < gridHorizonalNumber + gridHorizonalNumber; ++i)// 设一个上限防止无限循环
     {
         // 将当前有效的cell坐标添加到输出缓冲区
         // 检查cell坐标是否在网格范围内
@@ -106,23 +147,35 @@ void GridCountEdge (uint3 id : SV_DispatchThreadID)
             InterlockedAdd(gridCounter_GridCountEdge[idx], 1);
         }
 
-        // 如果已经到达终点cell，则退出循环
-        if (all(currentCell == endCell))
+        // 计算当前cell的中心点到起点cell中心点的距离
+        float2 cellCenter = gridZero + currentCell * cellSize + cellSize / 2.0f;
+        float fallBackDist = distance(startP, cellCenter);
+        // 如果已经到达终点cell或者距离超出限制，则退出循环
+        if ((currentCell.x == endCell.x && currentCell.y == endCell.y) || fallBackDist > dist + cellSize)
         {
             break;
         }
 
-        // 核心步进逻辑：
-        // 比较 tMax.x 和 tMax.y，选择更小的一个方向前进
-        if (tMax.x < tMax.y)
-        {
-            tMax.x += tDelta.x;
-            currentCell.x += step.x;
-        }
+        // 可能的两个下一cell：
+        int2 nxtCell_1 = currentCell + int2(step.x, 0);
+        int2 nxtCell_2 = currentCell + int2(0, step.y);
+        
+        float2 nxtCell_1_Center = gridZero + nxtCell_1 * cellSize + cellSize / 2.0f;
+        float2 nxtCell_2_Center = gridZero + nxtCell_2 * cellSize + cellSize / 2.0f;
+
+        float2 start2nxtCell_1 = nxtCell_1_Center - startP;
+        float2 start2nxtCell_2 = nxtCell_2_Center - startP;
+        
+        // 分别计算下两个cell到边的距离
+        float dist1 = abs(cross2D(vect, start2nxtCell_1)) / dist;
+        float dist2 = abs(cross2D(vect, start2nxtCell_2)) / dist;
+
+        // 选取更小的，作为下一个
+        if (dist1 < dist2)
+            currentCell = nxtCell_1;
         else
         {
-            tMax.y += tDelta.y;
-            currentCell.y += step.y;
+            currentCell = nxtCell_2;
         }
     }
 }
@@ -135,14 +188,14 @@ void GridCountEdge (uint3 id : SV_DispatchThreadID)
  * gridCounter 按照256一个，分为n个block
  * 分别计算每个block内部的前缀和
  */
-#define GROUP_SIZE 256
+#define PREFIX_GROUP_SIZE 256
 int groupNumber_GpuPrefix_ScanGroup;    // 总共的组数
-groupshared uint gridCounter_GroupCopy[GROUP_SIZE];
+groupshared uint gridCounter_GroupCopy[PREFIX_GROUP_SIZE];
 
 RWStructuredBuffer<uint> data_GpuPrefix_ScanGroup;  // 待前缀和的数组
 RWStructuredBuffer<uint> sum_GpuPrefix_ScanGroup;  // 存储每个组的总和
 
-[numthreads(GROUP_SIZE,1,1)]           // 全局线程ID                       当前所在组的三维id                当前线程在组内的一维展平id
+[numthreads(PREFIX_GROUP_SIZE,1,1)]           // 全局线程ID                       当前所在组的三维id                当前线程在组内的一维展平id
 void GpuPrefix_ScanGroup (uint3 id : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint groupThreadIndex : SV_GroupIndex)
 {
     // 先将buffer对应工作区的内容，复制到组共享内存，作一副本
@@ -151,7 +204,7 @@ void GpuPrefix_ScanGroup (uint3 id : SV_DispatchThreadID, uint3 groupID : SV_Gro
 
     // 基于副本进行 多次循环
     int interval = 1;
-    while (interval < GROUP_SIZE)
+    while (interval < PREFIX_GROUP_SIZE)
     {
         uint newValue = gridCounter_GroupCopy[groupThreadIndex] +
             (groupThreadIndex >= interval ? gridCounter_GroupCopy[groupThreadIndex - interval] : 0);
@@ -163,10 +216,10 @@ void GpuPrefix_ScanGroup (uint3 id : SV_DispatchThreadID, uint3 groupID : SV_Gro
 
     // 组内前缀和完成
     // 存储每个组的总和
-    int gID = id.x / GROUP_SIZE;
-    if (gID < groupNumber_GpuPrefix_ScanGroup && groupThreadIndex == 0)
-        sum_GpuPrefix_ScanGroup[gID] = gridCounter_GroupCopy[GROUP_SIZE - 1];
-
+    int gID = id.x / PREFIX_GROUP_SIZE;
+    if (groupThreadIndex == PREFIX_GROUP_SIZE - 1 && groupID.x < groupNumber_GpuPrefix_ScanGroup)
+        sum_GpuPrefix_ScanGroup[groupID.x] = gridCounter_GroupCopy[groupThreadIndex];
+    
     // 回写data
     if (id.x < gridNumber)
         data_GpuPrefix_ScanGroup[id.x] = gridCounter_GroupCopy[groupThreadIndex];
@@ -179,7 +232,7 @@ int data_offset;
 int data_number;
 int sum_offset;
 int sum_number;
-[numthreads(GROUP_SIZE,1,1)]           // 全局线程ID                       当前所在组的三维id                当前线程在组内的一维展平id
+[numthreads(PREFIX_GROUP_SIZE,1,1)]           // 全局线程ID                       当前所在组的三维id                当前线程在组内的一维展平id
 void GpuPrefix_ScanBlockGroup (uint3 id : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint groupThreadIndex : SV_GroupIndex)
 {
     // 先将buffer对应工作区的内容，复制到组共享内存，作一副本
@@ -188,7 +241,7 @@ void GpuPrefix_ScanBlockGroup (uint3 id : SV_DispatchThreadID, uint3 groupID : S
 
     // 基于副本进行 多次循环
     int interval = 1;
-    while (interval < GROUP_SIZE)
+    while (interval < PREFIX_GROUP_SIZE)
     {
         uint newValue = gridCounter_GroupCopy[groupThreadIndex] +
             (groupThreadIndex >= interval ? gridCounter_GroupCopy[groupThreadIndex - interval] : 0);
@@ -200,7 +253,7 @@ void GpuPrefix_ScanBlockGroup (uint3 id : SV_DispatchThreadID, uint3 groupID : S
 
     // 组内前缀和完成
     // 存储每个组的总和
-    if (groupID.x < sum_number && groupThreadIndex == GROUP_SIZE - 1)
+    if (groupID.x < sum_number && groupThreadIndex == PREFIX_GROUP_SIZE - 1)
         sum_GpuPrefix_ScanBlockGroup[groupID.x + sum_offset] = gridCounter_GroupCopy[groupThreadIndex];
 
     // 回写data
@@ -211,7 +264,7 @@ void GpuPrefix_ScanBlockGroup (uint3 id : SV_DispatchThreadID, uint3 groupID : S
 
 
 RWStructuredBuffer<uint> sum_GpuPrefix_DownBlockGroup;  // 存储组的源数据、总和（是一个256叉树）
-[numthreads(GROUP_SIZE,1,1)]
+[numthreads(PREFIX_GROUP_SIZE,1,1)]
 void GpuPrefix_DownBlockGroup (uint3 id : SV_DispatchThreadID, uint3 groupID : SV_GroupID )
 {
     int realGroupIdx = groupID.x - 1;
@@ -227,7 +280,7 @@ void GpuPrefix_DownBlockGroup (uint3 id : SV_DispatchThreadID, uint3 groupID : S
 int groupNumber_GpuPrefix_DownGroup;    // 总共的组数
 RWStructuredBuffer<uint> data_GpuPrefix_DownGroup;  // 待前缀和的数组 
 RWStructuredBuffer<uint> sum_GpuPrefix_DownGroup;  // 存储组的源数据、总和（是一个256叉树）
-[numthreads(GROUP_SIZE,1,1)]
+[numthreads(PREFIX_GROUP_SIZE,1,1)]
 void GpuPrefix_DownGroup (uint3 id : SV_DispatchThreadID, uint3 groupID : SV_GroupID )
 {
     int realGroupIdx = groupID.x - 1;
@@ -239,3 +292,424 @@ void GpuPrefix_DownGroup (uint3 id : SV_DispatchThreadID, uint3 groupID : SV_Gro
     }
     // 
 }
+
+
+/*
+ * 第三步 Grid-Edge-Counter Prefix 转化为 Grid-Edge-Info
+ */
+struct GridEdgeInfo
+{
+    uint offset;
+    uint count;
+    uint writePointer;
+};
+// 得到的计数器信息
+StructuredBuffer<uint> gridCounterPrefixed;
+// grid-edge映射信息
+RWStructuredBuffer<GridEdgeInfo> gridEdgeInfo;
+[numthreads(256,1,1)]
+void CalGridEdgeInfo (uint3 id : SV_DispatchThreadID)
+{
+    // 剔除掉越界线程
+    if (id.x >= gridNumber)
+        return;
+    
+    int thisPosCnt;
+    
+    // 再一次反算值，这个是count
+    if (id.x == 0)
+        thisPosCnt = gridCounterPrefixed[id.x];
+    else
+        thisPosCnt = gridCounterPrefixed[id.x] - gridCounterPrefixed[id.x - 1];
+
+    // 剔除掉没用的位置
+    if (thisPosCnt <= 0)
+    {
+        // 如果当前位置没有值，也就是没数据
+        gridEdgeInfo[id.x].count = 0;
+        gridEdgeInfo[id.x].writePointer = 0;
+        gridEdgeInfo[id.x].offset = 0;
+    }
+    else
+    {
+        // 否则有数据
+        if (id.x == 0)
+            gridEdgeInfo[id.x].offset = 0;
+        else
+            gridEdgeInfo[id.x].offset = gridCounterPrefixed[id.x - 1];
+        
+        gridEdgeInfo[id.x].count = thisPosCnt;
+        gridEdgeInfo[id.x].writePointer = 0;
+    }
+}
+
+
+
+/*
+ * 第四步
+ */
+// 边信息
+StructuredBuffer<PolygonEdge> shadowedPolygon_CompressToPool;  // 就是shadowedPolygon，只读版本更高性能
+// grid-edge映射信息
+RWStructuredBuffer<GridEdgeInfo> gridEdgeInfo_CompressToPool;
+// grid-edge数据池
+RWStructuredBuffer<uint> gridEdgePool;
+// 每个线程代表一个edge
+[numthreads(256,1,1)]
+void CompressToPool(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= shadowedPolygonNumber)
+        return;
+
+    float4 edge = shadowedPolygon_CompressToPool[id.x].Edge;
+    float2 startP = edge.xy; // 起点
+    float2 endP = edge.zw; // 终点
+
+    // 1. 初始化
+    float2 vect = endP - startP;
+    float dist = length(vect);
+    
+    // 计算起点和终点所在的cell坐标
+    // 注意：从世界坐标到网格坐标的转换
+    int2 startCell = int2(floor((startP - gridZero) / cellSize));
+    int2 endCell = int2(floor((endP - gridZero) / cellSize));
+
+    // 当前cell从起点开始
+    int2 currentCell = startCell;
+
+    // 计算方向
+    int2 step = int2(sign(vect.x), sign(vect.y));
+    // 坑爹sign会输出0
+    if (step.x == 0) step.x = 1;
+    if (step.y == 0) step.y = 1;
+    
+    // 5. 遍历循环
+    // 循环直到我们处理完终点所在的cell
+    for (int i = 0; i < gridHorizonalNumber + gridHorizonalNumber; ++i)// 设一个上限防止无限循环
+    {
+        // 将当前有效的cell坐标添加到输出缓冲区
+        // 检查cell坐标是否在网格范围内
+        if (currentCell.x >= 0 && currentCell.x < gridHorizonalNumber &&
+            currentCell.y >= 0 && currentCell.y < gridVerticalNumber)
+        {
+            // 核心逻辑在这里
+            // 先计算对应的cell 展平坐标
+            int cellIdx = currentCell.y * gridHorizonalNumber + currentCell.x;
+            // 进行原子Append
+            int writePos;
+            InterlockedAdd(gridEdgeInfo_CompressToPool[cellIdx].writePointer, 1, writePos);
+            writePos += gridEdgeInfo_CompressToPool[cellIdx].offset;
+            gridEdgePool[writePos] = id.x;
+        }
+
+        // 计算当前cell的中心点到起点cell中心点的距离
+        float2 cellCenter = gridZero + currentCell * cellSize + cellSize / 2.0f;
+        float fallBackDist = distance(startP, cellCenter);
+        // 如果已经到达终点cell或者距离超出限制，则退出循环
+        if ((currentCell.x == endCell.x && currentCell.y == endCell.y) || fallBackDist > dist + cellSize)
+        {
+            break;
+        }
+
+        // 可能的两个下一cell：
+        int2 nxtCell_1 = currentCell + int2(step.x, 0);
+        int2 nxtCell_2 = currentCell + int2(0, step.y);
+        
+        float2 nxtCell_1_Center = gridZero + nxtCell_1 * cellSize + cellSize / 2.0f;
+        float2 nxtCell_2_Center = gridZero + nxtCell_2 * cellSize + cellSize / 2.0f;
+
+        float2 start2nxtCell_1 = nxtCell_1_Center - startP;
+        float2 start2nxtCell_2 = nxtCell_2_Center - startP;
+        
+        // 分别计算下两个cell到边的距离
+        float dist1 = abs(cross2D(vect, start2nxtCell_1)) / dist;
+        float dist2 = abs(cross2D(vect, start2nxtCell_2)) / dist;
+
+        // 选取更小的，作为下一个
+        if (dist1 < dist2)
+            currentCell = nxtCell_1;
+        else
+        {
+            currentCell = nxtCell_2;
+        }
+    }
+}
+
+
+
+/*
+ * 第五步 计算阴影贴图！
+ */
+
+#include "Assets/URP/LightSystem/LightSystemInclude.hlsl"
+#define SHADOWMAP_GROUP_SIZE 256
+
+int _SpotLightShadowedCount;
+int shadowMapResolution_X;
+int shadowMapResolution_Y;
+StructuredBuffer<PolygonEdge> shadowedPolygon_ShadowMap;  // 就是shadowedPolygon，只读版本更高性能
+// grid-edge映射信息
+StructuredBuffer<GridEdgeInfo> gridEdgeInfo_ShadowMap;
+// grid-edge数据池
+StructuredBuffer<uint> gridEdgePool_ShadowMap;
+
+// 最终写对象：
+RWStructuredBuffer<ShadowMapInfo> SpotLight2D_ShadowMap_Buffer_ShadowMap;
+
+
+// 调试画板
+RWTexture2D<float4> debug_Canvas_ShadowMap;
+
+[numthreads(SHADOWMAP_GROUP_SIZE,1,1)]
+void ShadowMap(uint3 id : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint groupThreadIndex : SV_GroupIndex)
+{
+    // 多少个线程对应一个光源？
+    int threadsNumber2OneLight = shadowMapResolution_X / SHADOWMAP_GROUP_SIZE;
+    // 在第几个光源内？的第几个线程组？当前线程是该光源内的第几号？对应shadowMap第几个位置？
+    int4 lightIdx;
+    // 第几个光源？
+    lightIdx.x = groupID.x / threadsNumber2OneLight;
+    // 第几个group？
+    lightIdx.y = groupID.x % threadsNumber2OneLight;
+    // 当前线程属于这个光源的第几号线程？
+    lightIdx.z = lightIdx.y * SHADOWMAP_GROUP_SIZE + groupThreadIndex;
+    // 当前线程对应shadowMap第几个位置？
+    lightIdx.w = lightIdx.x * shadowMapResolution_X + lightIdx.z;
+
+    // 当前光源id大于场景中的最大光源数，就放弃该线程
+    if (lightIdx.x >= _SpotLightShadowedCount)
+        return;
+
+    // 否则正常计算
+    // 获取点光源信息
+    SpotLight2DData lightData = SpotLight2D_Shadowed_Data_Buffer[lightIdx.x];
+    // 计算当前线程，所代表的方向
+    float2 directionRange = float2(lightData.color_direction.w - lightData.inoutRadius_inoutAngles.w,
+                                    lightData.color_direction.w + lightData.inoutRadius_inoutAngles.w);
+    // 用当前的光源线程组内的序号，插值得到当前线程的方向
+    float currDirection = radians(lerp(directionRange.x, directionRange.y, (float)lightIdx.z / (float)shadowMapResolution_X));
+
+    float2 rayStartPos = lightData.position_intensity_falloff.xy;
+    float2 rayDirection = float2(cos(currDirection), sin(currDirection));
+
+
+    // 暂时替换后面的算法
+    float2 currPos = rayStartPos;
+    for (int i = 0; i < (gridHorizonalNumber + gridVerticalNumber); ++i)
+    {
+        int2 currentCell = int2(floor((currPos - gridZero) / cellSize));
+        if (currentCell.x >= 0 && currentCell.x < gridHorizonalNumber &&
+            currentCell.y >= 0 && currentCell.y < gridVerticalNumber)
+        {
+            float dist = distance(rayStartPos, currPos);
+            if (dist > lightData.inoutRadius_inoutAngles.y + cellSize)
+            {
+                SpotLight2D_ShadowMap_Buffer_ShadowMap[lightIdx.w].Depth = 1.0f;
+                SpotLight2D_ShadowMap_Buffer_ShadowMap[lightIdx.w].Id = 0;
+                break;
+            }
+            debug_Canvas_ShadowMap[currentCell] = 1.0f;
+            
+            int cellIndex = currentCell.y * gridHorizonalNumber + currentCell.x;
+            GridEdgeInfo info = gridEdgeInfo_ShadowMap[cellIndex];
+            
+            // 如果该cell是空的，直接不管
+            if (info.count != 0)
+            {
+                // 遇到不空的cell
+                // 遍历cell指向的边
+                for (int j = 0; j < info.count; ++j)
+                {
+                    // 获取边
+                    uint poolIdx = j + info.offset;
+                    uint edgeIdx = gridEdgePool_ShadowMap[poolIdx];
+                    float4 edge = shadowedPolygon_ShadowMap[edgeIdx].Edge;
+                    
+                    // 边与射线求交
+                    float2 p1 = edge.xy;
+                    float2 p2 = edge.zw;
+                    float2 dir1 = normalize(p1 - rayStartPos);
+                    float2 dir2 = normalize(p2 - rayStartPos);
+                    
+                    float cross1 = cross2D(rayDirection, dir1);
+                    float cross2 = cross2D(rayDirection, dir2);
+                    
+    
+                    // 如果cross1和cross2同号，那么表示这条边与射线没有交点
+                    if (cross1 * cross2 >= 0)
+                        continue;
+    
+                    // 否则有交点
+                    float2 dirEdge = normalize(p2 - p1);
+                    float crossEdge = cross2D(rayDirection, dirEdge);
+                    
+                    // 根据屏蔽正向边、采用反向边的原则：
+                    // TODO crossEdge若为正，说明这个边取到，否则不取到
+                    /*if (crossEdge < 0)
+                        continue;*/
+    
+                    // 现在可以说：光线和这条线段一定香蕉
+                    float2 intPoint = GetRaySegmentIntersection(rayStartPos, rayDirection, p1, p2);
+                    // 计算距离
+                    float dist = length(intPoint - rayStartPos);
+                    // 将相对距离打包到uint，结束这个线程
+                    float packedDistance;
+                    packedDistance = clamp(dist / lightData.inoutRadius_inoutAngles.y, 0, 1);
+                    SpotLight2D_ShadowMap_Buffer_ShadowMap[lightIdx.w].Depth = packedDistance;
+                    SpotLight2D_ShadowMap_Buffer_ShadowMap[lightIdx.w].Id = shadowedPolygon_ShadowMap[edgeIdx].Id;
+                    return;
+                }
+            }
+            
+        }
+        else
+        {
+            SpotLight2D_ShadowMap_Buffer_ShadowMap[lightIdx.w].Depth = 1.0f;
+            SpotLight2D_ShadowMap_Buffer_ShadowMap[lightIdx.w].Id = 0;
+            break;
+        }
+        currPos += rayDirection * cellSize;
+    }
+    return;
+    
+    // --- 射线网格遍历算法 (Amanatides & Woo) ---
+
+    // 1. 初始化
+    // 计算射线起点所在的单元格坐标
+    int2 currentCell = int2(floor((rayStartPos - gridZero) / cellSize));
+
+    // 计算步进方向 (1, 0, or -1 for each axis)
+    int2 step = int2(sign(rayDirection.x), sign(rayDirection.y));
+
+    // 2. 计算 tDelta
+    // tDelta 表示射线在X或Y方向上穿过一个单元格的宽度/高度需要多少“时间t”
+    // (t 是 P = rayStartPos + t * rayDirection 中的参数 t)
+    // 为避免除以0，我们给一个极大值
+    float2 tDelta = abs(cellSize / rayDirection);
+    if (rayDirection.x == 0.0f) tDelta.x = 1.0e10f;
+    if (rayDirection.y == 0.0f) tDelta.y = 1.0e10f;
+
+    // 3. 计算初始 tMax
+    // tMax 表示射线从起点到达第一个X和Y方向的网格边界需要多少“时间t”
+    float2 tMax;
+    // 计算起点在单元格内的相对位置 [0,1)
+    float2 startInCell = frac((rayStartPos - gridZero) / cellSize);
+
+    // 正确的 tMax 初始化逻辑
+    if (rayDirection.x > 0.0f) {
+        tMax.x = (1.0f - startInCell.x) * tDelta.x;
+    } else {
+        tMax.x = startInCell.x * tDelta.x;
+    }
+
+    if (rayDirection.y > 0.0f) {
+        tMax.y = (1.0f - startInCell.y) * tDelta.y;
+    } else {
+        tMax.y = startInCell.y * tDelta.y;
+    }
+
+    // 修正水平/垂直射线的情况
+    if (rayDirection.x == 0.0f) tMax.x = 1.0e10f;
+    if (rayDirection.y == 0.0f) tMax.y = 1.0e10f;
+
+    // 4. 遍历循环
+    // 您可以根据需要设置循环次数上限，以防止无限循环
+    for (int i = 0; i < (gridHorizonalNumber + gridVerticalNumber); ++i)
+    {
+        debug_Canvas_ShadowMap[currentCell] = 1.0f;
+        // 检查当前单元格是否在网格范围内
+        if (currentCell.x >= 0 && currentCell.x < gridHorizonalNumber &&
+            currentCell.y >= 0 && currentCell.y < gridVerticalNumber)
+        {
+            // -----------------------------------------------------------------
+            // 在这里处理 currentCell，它就是您当前遍历到的单元格坐标。
+            // 例如，您可以通过以下方式计算其在一维数组中的索引：
+            // int cellIndex = currentCell.y * gridHorizonalNumber + currentCell.x;
+            // 然后使用 cellIndex 去查询您的四叉树或边数据池。
+            // ...
+            // 如果在这里找到了碰撞体并确定是最近的，您可以直接 break; 循环。
+            // -----------------------------------------------------------------
+            
+            // 如果超出了该光源的范围，那么直接说明这个位置的深度为最大，直接放弃
+            float2 cellCenterPosition = gridZero + currentCell * cellSize + cellSize * .5f;
+            if (distance(cellCenterPosition, rayStartPos) > lightData.inoutRadius_inoutAngles.y + cellSize)
+            {
+                SpotLight2D_ShadowMap_Buffer_ShadowMap[lightIdx.w].Depth = 1.0f;
+                return;
+            }
+            
+            int cellIndex = currentCell.y * gridHorizonalNumber + currentCell.x;
+            GridEdgeInfo info = gridEdgeInfo_ShadowMap[cellIndex];
+            
+            // 该cell是空的，直接不管
+            if (info.count == 0) continue;
+            
+            // 遇到不空的cell
+            // 遍历cell指向的边
+            for (int j = 0; j < info.count; ++j)
+            {
+                // 获取边
+                uint poolIdx = j + info.offset;
+                uint edgeIdx = gridEdgePool_ShadowMap[poolIdx];
+                float4 edge = shadowedPolygon_ShadowMap[edgeIdx].Edge;
+                
+                // 边与射线求交
+                float2 p1 = edge.xy;
+                float2 p2 = edge.zw;
+                float2 dir1 = normalize(p1 - rayStartPos);
+                float2 dir2 = normalize(p2 - rayStartPos);
+                
+                float cross1 = cross2D(rayDirection, dir1);
+                float cross2 = cross2D(rayDirection, dir2);
+                
+
+                // 如果cross1和cross2同号，那么表示这条边与射线没有交点
+                if (cross1 * cross2 >= 0)
+                    continue;
+
+                // 否则有交点
+                float2 dirEdge = normalize(p2 - p1);
+                float crossEdge = cross2D(rayDirection, dirEdge);
+                
+                // 根据屏蔽正向边、采用反向边的原则：
+                // TODO crossEdge若为正，说明这个边取到，否则不取到
+                /*if (crossEdge < 0)
+                    continue;*/
+
+                // 现在可以说：光线和这条线段一定香蕉
+                float2 intPoint = GetRaySegmentIntersection(rayStartPos, rayDirection, p1, p2);
+                // 计算距离
+                float distance = length(intPoint - rayStartPos);
+                // 将相对距离打包到uint，结束这个线程
+                uint packedDistance = uint(clamp(distance / lightData.inoutRadius_inoutAngles.y, 0, 1) * 0xFFFFFFFF);
+                SpotLight2D_ShadowMap_Buffer_ShadowMap[lightIdx.w].Depth = packedDistance;
+                return;
+            }
+        }
+        else
+        {
+            // 射线已经走出了网格范围，可以提前退出
+            SpotLight2D_ShadowMap_Buffer_ShadowMap[lightIdx.w].Depth = 1.0f;
+            return;
+        }
+
+        // 核心步进逻辑：
+        // 比较 tMax.x 和 tMax.y，选择“时间t”更小的方向前进一步
+        if (tMax.x < tMax.y)
+        {
+            tMax.x += tDelta.x;
+            currentCell.x += step.x;
+        }
+        else
+        {
+            tMax.y += tDelta.y;
+            currentCell.y += step.y;
+        }
+    }
+    
+    // 一般不会走到这一步
+    SpotLight2D_ShadowMap_Buffer_ShadowMap[lightIdx.w].Depth = 0xFFFFFFFF;
+    debug_Canvas_ShadowMap[currentCell] = 1.0f;
+}
+
+
