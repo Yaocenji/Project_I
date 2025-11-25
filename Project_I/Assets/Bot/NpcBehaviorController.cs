@@ -203,8 +203,8 @@ namespace Project_I
             int number = 20;
             float interval = time / number;
             
-            Debug.Log("time: " + time);
-            Debug.Log("interval: " + interval);
+            /*Debug.Log("time: " + time);
+            Debug.Log("interval: " + interval);*/
             
             state = BotState.Attack;
             

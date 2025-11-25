@@ -6,6 +6,7 @@ using Sirenix.OdinInspector;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -52,13 +53,14 @@ namespace Project_I.LightSystem
         public uint Id;
     };
     
+    [ExecuteAlways]
     public class ShadowCasterManager : MonoBehaviour
     {
         public static ShadowCasterManager Instance;
 
         // 初始的边buffer大小
-        [ReadOnly]
-        public int shadowedPoligonDataSize = 1024;
+        // [ReadOnly]
+        public int shadowedPoligonDataSize = 16384;
         
         // 核心：边数据
         [HideInInspector]
@@ -73,23 +75,34 @@ namespace Project_I.LightSystem
         
         // 核心数据：grid数量（指数）
         [LabelText("Grid的宽数量级（2的幂指数）")]
+        [Range(1, 13)]
         public int gridHorizonalNumberOM = 10;
         public int gridHorizonalNumber
         {
             get => (1 << gridHorizonalNumberOM);
         }
         [LabelText("Grid的高数量级（2的幂指数）")]
+        [Range(1, 13)]
         public int gridVerticalNumberOM = 10;
         public int gridVerticalNumber
         {
             get => (1 << gridVerticalNumberOM);
         }
         
-        [LabelText("光源的阴影精度（2的幂指数）")]
-        public int shadowMapPrecision = 11;
-        public int shadowMapHorizonalRes
+        
+        
+        [LabelText("平行光源的阴影精度（2的幂指数）")]
+        public int parallelShadowMapPrecision = 11;
+        public int parallelShadowMapHorizonalRes
         {
-            get => (1 << shadowMapPrecision);
+            get => (1 << parallelShadowMapPrecision);
+        }
+        
+        [LabelText("点光源的阴影精度（2的幂指数）")]
+        public int spotShadowMapPrecision = 11;
+        public int spotShadowMapHorizonalRes
+        {
+            get => (1 << spotShadowMapPrecision);
         }
         
         [LabelText("渲染网格")]
@@ -131,19 +144,34 @@ namespace Project_I.LightSystem
         // grid-edge pool buffer的大小 预估值
         public const int GRID_EDGE_POOL_BUFFER_MAXSIZE = 1920000;
         
-        // shadowMap分辨率
-        public Vector2Int shadowMapResolution
+        
+        // spotShadowMap分辨率
+        public Vector2Int spotShadowMapResolution
         {
-            get => new Vector2Int(shadowMapHorizonalRes, LightSystemManager.MAX_SPOTLIGHT_COUNT);
+            get => new Vector2Int(spotShadowMapHorizonalRes, LightSystemManager.MAX_SPOTLIGHT_COUNT);
         }
-        // shadowmap总大小
-        public int shadowMapPixelNumber
+        // spotShadowmap总大小
+        public int spotShadowMapPixelNumber
         {
-            get => shadowMapHorizonalRes * LightSystemManager.MAX_SPOTLIGHT_COUNT;
+            get => spotShadowMapHorizonalRes * LightSystemManager.MAX_SPOTLIGHT_COUNT;
+        }
+        
+        
+        // parallelShadowMap分辨率
+        public Vector2Int parallelShadowMapResolution
+        {
+            get => new Vector2Int(parallelShadowMapHorizonalRes, LightSystemManager.MAX_PARALLELLIGHT_COUNT);
+        }
+        // parallelShadowmap总大小
+        public int parallelShadowMapPixelNumber
+        {
+            get => parallelShadowMapHorizonalRes * LightSystemManager.MAX_PARALLELLIGHT_COUNT;
         }
         
         // 点光阴影纹理
         public ComputeBuffer spotLight_ShadowMap_Buffer;
+        // 平行光阴影纹理
+        public ComputeBuffer parallelLight_ShadowMap_Buffer;
         
         // 当前分配的ID
         public uint nextID = 1;
@@ -161,14 +189,26 @@ namespace Project_I.LightSystem
             
             shadowCasters = new HashSet<ShadowCaster>();
             
-            // 创建点光的阴影纹理
-            spotLight_ShadowMap_Buffer = new ComputeBuffer(shadowMapPixelNumber, Marshal.SizeOf<ShadowMapInfo>() /* 用32位浮动点表示 */);
-            float[] iniData = new float[shadowMapPixelNumber];
-            for (int i = 0; i < shadowMapPixelNumber; i++)
-                iniData[i] = 1.0f;
-            spotLight_ShadowMap_Buffer.SetData(iniData);
             
-            // 绑定阴影纹理到UAV 1
+            // 初始化两张纹理所用数据
+            int initDataSize = Mathf.Max(spotShadowMapPixelNumber, parallelShadowMapPixelNumber);
+            ShadowMapInfo[] iniData = new ShadowMapInfo[initDataSize];
+            for (int i = 0; i < initDataSize; i++)
+            {
+                iniData[i].Id = 0;
+                iniData[i].Depth = 1.0f;
+            }
+            
+            // 创建点光的阴影纹理
+            spotLight_ShadowMap_Buffer = new ComputeBuffer(spotShadowMapPixelNumber, Marshal.SizeOf<ShadowMapInfo>() /* 用32位浮动点表示 */);
+            spotLight_ShadowMap_Buffer.SetData(iniData, 0, 0, spotShadowMapPixelNumber);
+            
+            // 创建平行光阴影纹理
+            parallelLight_ShadowMap_Buffer =
+                new ComputeBuffer(parallelShadowMapPixelNumber, Marshal.SizeOf<ShadowMapInfo>());
+            parallelLight_ShadowMap_Buffer.SetData(iniData, 0, 0, parallelShadowMapPixelNumber);
+            
+            // shadowed polygon ID管理器
             nextID = 1;
             
             initialized = true;
@@ -214,7 +254,7 @@ namespace Project_I.LightSystem
                 shadowCasters.Add(shadowCaster);
                 shadowCaster.scID = nextID;
                 nextID++;
-                Debug.Log("阴影多边形添加成功：" +  shadowCaster.gameObject.name + " id:" + nextID);
+                // Debug.Log("阴影多边形添加成功：" +  shadowCaster.gameObject.name + " id:" + nextID);
             }
         }
         public void UnregisterShadowedPoligon(ShadowCaster shadowCaster)
@@ -234,11 +274,21 @@ namespace Project_I.LightSystem
         // Update is called once per frame
         void Update()
         {
+            UpdateShadowedPolygonData();
+        }
+
+        public void UpdateShadowedPolygonData()
+        {
+            foreach (ShadowCaster caster in shadowCasters)
+            {
+                caster.GenerateOutline(true);
+            }
             shadowedPoligonData.Clear();
             foreach (var caster in shadowCasters)
             {
                 foreach (var edge in caster.outline)
                 {
+                    // 根据edge长度来：
                     PolygonEdge polygonEdge = new PolygonEdge();
                     polygonEdge.Edge =  edge;
                     polygonEdge.Id = caster.scID;
@@ -255,30 +305,30 @@ namespace Project_I.LightSystem
                 var rect = gridRect;
                 Gizmos.color = Color.yellow;
 
-                for (int i = 0; i < gridHorizonalNumber; i++)
+                for (int i = 0; i <= gridHorizonalNumber; i++)
                 {
-                    if (i == 0 || i ==  gridHorizonalNumber - 1)
+                    if (i == 0 || i ==  gridHorizonalNumber)
                         Gizmos.color = Color.yellow;
                     else
                         if (drawInnerGrid)
                             Gizmos.color = new Color(1, 0, 0, 0.1f);
                     
-                    if (!drawInnerGrid && i != 0 && i != gridHorizonalNumber - 1)
+                    if (!drawInnerGrid && i != 0 && i != gridHorizonalNumber)
                         continue;
                     
                     Gizmos.DrawLine(new Vector3(rect.x + i * cellSize, rect.y, 0),
                         new Vector3(rect.x + i * cellSize, rect.y + rect.w, 0));
 
                 }
-                for (int i = 0; i < gridVerticalNumber; i++)
+                for (int i = 0; i <= gridVerticalNumber; i++)
                 {
-                    if (i == 0 || i ==  gridVerticalNumber - 1)
+                    if (i == 0 || i ==  gridVerticalNumber)
                         Gizmos.color = Color.yellow;
                     else
                         if (drawInnerGrid)
                             Gizmos.color = new Color(1, 0, 0, 0.1f);
                     
-                    if (!drawInnerGrid && i != 0 && i != gridHorizonalNumber - 1)
+                    if (!drawInnerGrid && i != 0 && i != gridHorizonalNumber)
                         continue;
                     
                     Gizmos.DrawLine(new Vector3(rect.x, rect.y + i * cellSize, 0),

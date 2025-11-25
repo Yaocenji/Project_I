@@ -8,6 +8,10 @@ using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 [ExecuteAlways]
 public class ShadowSystemRenderFeature : ScriptableRendererFeature
 {
@@ -34,9 +38,14 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
     public ComputeBuffer gridEdgeInfoBuffer;
     // grid-edge映射 压缩池
     public ComputeBuffer gridEdgePoolBuffer;
+    // grid-edge映射 有无记录的Mipmap
+    private RenderTexture gridEdgeMipmapBuffer;
     
     // 调试画板
     private RenderTexture debugCanvasBuffer;
+    // 调试计数器
+    private ComputeBuffer debugCountBufferSpotLight;
+    private ComputeBuffer debugCountBufferParallelLight;
 
     private struct GpuPrefixIterativeData
     {
@@ -64,9 +73,14 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
         public ComputeBuffer gridEdgeInfoBuffer;
         // grid-edge映射 压缩池
         public ComputeBuffer gridEdgePoolBuffer;
+        // grid-edge映射 有无记录的Mipmap
+        public RenderTexture gridEdgeMipmapBuffer;
         
         // 调试画板
         public RenderTexture debugCanvasBuffer;
+        // 调试计数器
+        public ComputeBuffer debugCountBufferSpotLight;
+        public ComputeBuffer debugCountBufferParallelLight;
         
         // 预先获取资产的id
         private static readonly int CellSizeProperty = Shader.PropertyToID("cellSize");
@@ -81,7 +95,9 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
         private static readonly int BlockCounterProperty = Shader.PropertyToID("blockCounter");
         private static readonly int gridEdgeInfoProperty = Shader.PropertyToID("gridEdgeInfo");
         private static readonly int gridEdgePoolProperty = Shader.PropertyToID("gridEdgePool");
+        
         private static readonly int spotLightShadowMapProperty = Shader.PropertyToID("SpotLight2D_ShadowMap_Buffer");
+        private static readonly int parallelLightShadowMapProperty = Shader.PropertyToID("ParallelLight_ShadowMap_Buffer");
         
         private static readonly int debug_CanvasProperty = Shader.PropertyToID("debug_Canvas");
         
@@ -124,19 +140,34 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
         private static readonly int gridEdgeInfo_CompressToPool_Property = Shader.PropertyToID("gridEdgeInfo_CompressToPool");
         private static readonly int gridEdgePool_Property = Shader.PropertyToID("gridEdgePool");
         
+        // 第4.5步 加速结构
+        private static readonly int gridEdgeInfo_SetFlag_Property = Shader.PropertyToID("gridEdgeInfo_SetFlag");
+        private static readonly int girdEdgeFlag_SetFlag_Property = Shader.PropertyToID("girdEdgeFlag_SetFlag");
         
-        // 第五步，shadowMap计算
+        // 第五步，spot光shadowMap计算
         private static readonly int spotLightShadowedCount_Property = Shader.PropertyToID("_SpotLightShadowedCount");
-        private static readonly int shadowMapResolutionX_Property = Shader.PropertyToID("shadowMapResolution_X");
-        private static readonly int shadowMapResolutionY_Property = Shader.PropertyToID("shadowMapResolution_Y");
+        private static readonly int spotShadowMapResolutionX_Property = Shader.PropertyToID("shadowMapResolution_X_Spot");
+        private static readonly int spotShadowMapResolutionY_Property = Shader.PropertyToID("shadowMapResolution_Y_Spot");
+        
+        private static readonly int gridEdgeFlagMipCount_Property = Shader.PropertyToID("gridEdgeFlagMipCount");
+        private static readonly int gridEdgeFlag_ShadowMap_Property = Shader.PropertyToID("gridEdgeFlag_ShadowMap");
+        
+        private static readonly int parallelLightShadowedCount_Property = Shader.PropertyToID("_ParallelLightCount");
+        private static readonly int parallelShadowMapResolutionX_Property = Shader.PropertyToID("shadowMapResolution_X_Parallel");
+        private static readonly int parallelShadowMapResolutionY_Property = Shader.PropertyToID("shadowMapResolution_Y_Parallel");
         
         private static readonly int shadowedPolygon_ShadowMap_Property = Shader.PropertyToID("shadowedPolygon_ShadowMap");
         private static readonly int gridEdgeInfo_ShadowMap_Property = Shader.PropertyToID("gridEdgeInfo_ShadowMap");
         private static readonly int gridEdgePool_ShadowMap_Property = Shader.PropertyToID("gridEdgePool_ShadowMap");
-        private static readonly int spotLight2D_ShadowMap_Buffer_Property = Shader.PropertyToID("SpotLight2D_ShadowMap_Buffer_ShadowMap");
+        
+        private static readonly int spotLight2D_ShadowMap_Buffer_Property = Shader.PropertyToID("SpotLight2D_ShadowMap_Buffer_SpotShadowMap");
+        private static readonly int parallelLight2D_ShadowMap_Buffer_Property = Shader.PropertyToID("ParallelLight2D_ShadowMap_Buffer_ParallelShadowMap");
+        
         
         // 用于渲染的调试画板
         private static readonly int debug_Canvas_Property = Shader.PropertyToID("debug_Canvas_ShadowMap");
+        private static readonly int debug_Count_spot_Property = Shader.PropertyToID("debug_count_spot");
+        private static readonly int debug_Count_parallel_Property = Shader.PropertyToID("debug_count_parallel");
         
         
         // pass前
@@ -149,6 +180,16 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
             // 此处全局设置是为了debug显示用
             Shader.SetGlobalBuffer(GridCounterProperty, gridCounterBuffer);
             Shader.SetGlobalBuffer(BlockCounterProperty, blockSumBuffer);
+            
+            cmd.SetRenderTarget(debugCanvasBuffer);
+            cmd.ClearRenderTarget(true, true, Color.clear);
+            
+            // 清空debug计数器
+            int[] debugClearData = new int[128];
+            for (int i = 0; i < debugClearData.Length; i++)
+                debugClearData[i] = 0;
+            cmd.SetBufferData(debugCountBufferSpotLight, debugClearData, 0, 0, 128);
+            cmd.SetBufferData(debugCountBufferParallelLight, debugClearData, 0, 0, 4);
         }
 
         // pass中
@@ -162,10 +203,12 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
                 Debug.LogError("ShadowSystem: Missing Compute Shader, Buffer, or Manager Instance.");
                 return;
             }
+
+            // 每帧渲染前更新polygon信息
+            // 取消在这里更新，因为在这里更新太卡了。
+            // inst.UpdateShadowedPolygonData();
             
             CommandBuffer cmd = CommandBufferPool.Get("Grid-Edge Count");
-            
-            cmd.BeginSample("Grid-Edge Count Sample");
             
             // 网格信息在所有操作之前直接全局地设置
             cmd.SetGlobalFloat(CellSizeProperty, inst.cellSize);
@@ -173,16 +216,18 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
             cmd.SetGlobalInt(GridVerticalNumberProperty, inst.gridVerticalNumber);
             cmd.SetGlobalVector(GridZeroProperty, inst.gridZero);
             
+            
+            cmd.BeginSample("Clear Grid-Edge Count");
             // 先清空一道
             int clearKernel = shadowSystemCompute.FindKernel("ClearGridCounter");
             // 健壮性检查
-            if (clearKernel == -1)
+            /*if (clearKernel == -1)
             {
                 Debug.LogError("Kernel 'ClearGridCounter' not found in the compute shader.");
                 cmd.EndSample("Grid-Edge Count");
                 CommandBufferPool.Release(cmd);
                 return;
-            }
+            }*/
             // 绑定变量
             cmd.SetComputeIntParam(shadowSystemCompute, GridNumberProperty, inst.GRID_INFO_BUFFER_SIZE);
             // 绑定buffer
@@ -190,16 +235,20 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
             // 调用
             cmd.DispatchCompute(shadowSystemCompute, clearKernel, inst.GRID_INFO_BUFFER_SIZE / 256 + 1, 1, 1);
             
+            cmd.EndSample("Clear Grid-Edge Count");
+            
+            
+            cmd.BeginSample("Count Grid-Edge");
             // 第一步：计数
             int countKernel = shadowSystemCompute.FindKernel("GridCountEdge");
             // 健壮性检查
-            if (countKernel == -1)
+            /*if (countKernel == -1)
             {
                 Debug.LogError("Kernel 'GridCountEdge' not found in the compute shader.");
                 cmd.EndSample("Grid-Edge Count");
                 CommandBufferPool.Release(cmd);
                 return;
-            }
+            }*/
             // 边数
             int edgeCount = inst.shadowedPoligonData.Count;
             // 绑定变量
@@ -211,18 +260,20 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
             // 调用
             cmd.DispatchCompute(shadowSystemCompute, countKernel, edgeCount / 256 + 1, 1, 1);
             
+            cmd.EndSample("Count Grid-Edge");
             
+            cmd.BeginSample("Prefix Grid-Edge");
             // 第二步：对计数buffer跑一趟GPU Prefix
             // 2.1 上扫
             int gpuPrefix_1_Kernel = shadowSystemCompute.FindKernel("GpuPrefix_ScanGroup");
             // 健壮性检查
-            if (gpuPrefix_1_Kernel == -1)
+            /*if (gpuPrefix_1_Kernel == -1)
             {
                 Debug.LogError("Kernel 'GpuPrefix_ScanGroup' not found in the compute shader.");
                 cmd.EndSample("Grid-Edge Count");
                 CommandBufferPool.Release(cmd);
                 return;
-            }
+            }*/
             // 临时计数：当前的组数
             int currGroupNumber = inst.GRID_INFO_BUFFER_SIZE >> 8;
             if (currGroupNumber == 0) currGroupNumber = 1;
@@ -253,13 +304,13 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
                 
                 int gpuPrefix_2_Kernel = shadowSystemCompute.FindKernel("GpuPrefix_ScanBlockGroup");
                 // 健壮性检查
-                if (gpuPrefix_2_Kernel == -1)
+                /*if (gpuPrefix_2_Kernel == -1)
                 {
                     Debug.LogError("Kernel 'GpuPrefix_ScanBlockGroup' not found in the compute shader.");
                     cmd.EndSample("Grid-Edge Count");
                     CommandBufferPool.Release(cmd);
                     return;
-                }
+                }*/
                 
                 while (true)
                 {
@@ -307,13 +358,13 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
             // 2.3下扫
             int gpuPrefix_3_Kernel = shadowSystemCompute.FindKernel("GpuPrefix_DownBlockGroup");
             // 健壮性检查
-            if (gpuPrefix_3_Kernel == -1)
+            /*if (gpuPrefix_3_Kernel == -1)
             {
                 Debug.LogError("Kernel 'GpuPrefix_DownBlockGroup' not found in the compute shader.");
                 cmd.EndSample("Grid-Edge Count");
                 CommandBufferPool.Release(cmd);
                 return;
-            }
+            }*/
             for (int i = iterativeData.Count - 1; i >= 0; i--)
             {
                 cmd.SetComputeIntParam(shadowSystemCompute, data_number_GpuPrefix_ScanBlockGroup_Property, iterativeData[i].dataNumber);
@@ -329,51 +380,56 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
             // 2.4下扫
             int gpuPrefix_4_Kernel = shadowSystemCompute.FindKernel("GpuPrefix_DownGroup");
             // 健壮性检查
-            if (gpuPrefix_4_Kernel == -1)
+            /*if (gpuPrefix_4_Kernel == -1)
             {
                 Debug.LogError("Kernel 'GpuPrefix_DownGroup' not found in the compute shader.");
                 cmd.EndSample("Grid-Edge Count");
                 CommandBufferPool.Release(cmd);
                 return;
-            }
+            }*/
             cmd.SetComputeIntParam(shadowSystemCompute, groupNumber_GpuPrefix_DownGroup_Property, inst.GRID_INFO_BUFFER_SIZE >> 8 != 0 ? inst.GRID_INFO_BUFFER_SIZE >> 8 : 1);
             cmd.SetComputeBufferParam(shadowSystemCompute, gpuPrefix_4_Kernel, data_GpuPrefix_DownGroup_Property, gridCounterBuffer);
             cmd.SetComputeBufferParam(shadowSystemCompute, gpuPrefix_4_Kernel, sum_GpuPrefix_DownGroup_Property, blockSumBuffer);
             // 调用
             cmd.DispatchCompute(shadowSystemCompute, gpuPrefix_4_Kernel, inst.GRID_INFO_BUFFER_SIZE / 256 + 1, 1, 1);
             
+            cmd.EndSample("Prefix Grid-Edge");
+            
+            cmd.BeginSample("Calculate Grid-Edge Info");
             // GPU前缀和计算完毕
             /*
              * 第三部：计算grid-edge映射信息
              */
             int gridEdgeInfoKernel = shadowSystemCompute.FindKernel("CalGridEdgeInfo");
             // 健壮性检查
-            if (gridEdgeInfoKernel == -1)
+            /*if (gridEdgeInfoKernel == -1)
             {
                 Debug.LogError("Kernel 'CalGridEdgeInfo' not found in the compute shader.");
                 cmd.EndSample("Grid-Edge Count");
                 CommandBufferPool.Release(cmd);
                 return;
-            }
+            }*/
             cmd.SetComputeIntParam(shadowSystemCompute, GridNumberProperty, inst.GRID_INFO_BUFFER_SIZE);
             cmd.SetComputeBufferParam(shadowSystemCompute, gridEdgeInfoKernel, gridCounterPrefixed_Property, gridCounterBuffer);
             cmd.SetComputeBufferParam(shadowSystemCompute, gridEdgeInfoKernel, gridEdgeInfo_Property, gridEdgeInfoBuffer);
             // 调用
             cmd.DispatchCompute(shadowSystemCompute, gridEdgeInfoKernel, inst.GRID_INFO_BUFFER_SIZE / 256 + 1, 1, 1);
             
+            cmd.EndSample("Calculate Grid-Edge Info");
             
+            cmd.BeginSample("Push Grid-Edge Info to Pool");
             /*
              * 第四部 将映射信息压池子
              */
             int compressToPoolKernel = shadowSystemCompute.FindKernel("CompressToPool");
             // 健壮性检查
-            if (compressToPoolKernel == -1)
+            /*if (compressToPoolKernel == -1)
             {
                 Debug.LogError("Kernel 'CompressToPool' not found in the compute shader.");
                 cmd.EndSample("Grid-Edge Count");
                 CommandBufferPool.Release(cmd);
                 return;
-            }
+            }*/
             cmd.SetComputeIntParam(shadowSystemCompute, ShadowedPolygonNumberProperty, edgeCount);
             cmd.SetComputeBufferParam(shadowSystemCompute, compressToPoolKernel, shadowedPolygon_CompressToPool_Property, shadowedPolygonBuffer);
             cmd.SetComputeBufferParam(shadowSystemCompute, compressToPoolKernel, gridEdgeInfo_CompressToPool_Property, gridEdgeInfoBuffer);
@@ -381,33 +437,110 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
             // 调用
             cmd.DispatchCompute(shadowSystemCompute, compressToPoolKernel, edgeCount / 256 + 1, 1, 1);
             
+            cmd.EndSample("Push Grid-Edge Info to Pool");
+            
+            cmd.BeginSample("Set Grid Flag");
             /*
-             * 第五步 shadowmap，启动！
+             * 第 4.5 步 加速结构
              */
-            int shadowMapKernel = shadowSystemCompute.FindKernel("ShadowMap");
+            int setFlagKernel = shadowSystemCompute.FindKernel("SetFlag");
             // 健壮性检查
-            if (shadowMapKernel == -1)
+            /*if (setFlagKernel == -1)
             {
-                Debug.LogError("Kernel 'ShadowMap' not found in the compute shader.");
+                Debug.LogError("Kernel 'SetFlag' not found in the compute shader.");
                 cmd.EndSample("Grid-Edge Count");
                 CommandBufferPool.Release(cmd);
                 return;
-            }
+            }*/
+            cmd.SetComputeIntParam(shadowSystemCompute, GridNumberProperty, inst.GRID_INFO_BUFFER_SIZE);
+            // 绑定数据缓冲
+            cmd.SetComputeBufferParam(shadowSystemCompute, setFlagKernel, gridEdgeInfo_SetFlag_Property, gridEdgeInfoBuffer);
+            cmd.SetComputeTextureParam(shadowSystemCompute, setFlagKernel, girdEdgeFlag_SetFlag_Property, gridEdgeMipmapBuffer);
+            // 调用
+            cmd.DispatchCompute(shadowSystemCompute, setFlagKernel, inst.GRID_INFO_BUFFER_SIZE / 256 + 1, 1, 1);
+            // mipmap自动生成加速结构
+            cmd.GenerateMips(gridEdgeMipmapBuffer);
+            
+            cmd.EndSample("Set Grid Flag");
+            
+            cmd.BeginSample("ShadowMap");
+            
+            /*
+             * 第五步 shadowmap，启动！
+             */
+            int spotShadowMapKernel = shadowSystemCompute.FindKernel("SpotShadowMap");
+            // 健壮性检查
+            /*if (spotShadowMapKernel == -1)
+            {
+                Debug.LogError("Kernel 'SpotShadowMap' not found in the compute shader.");
+                cmd.EndSample("Grid-Edge Count");
+                CommandBufferPool.Release(cmd);
+                return;
+            }*/
+            int parallelShadowMapKernel = shadowSystemCompute.FindKernel("ParallelShadowMap");
+            // 健壮性检查
+            /*if (parallelShadowMapKernel == -1)
+            {
+                Debug.LogError("Kernel 'ParallelShadowMap' not found in the compute shader.");
+                cmd.EndSample("Grid-Edge Count");
+                CommandBufferPool.Release(cmd);
+                return;
+            }*/
+            
             // 绑定参数
             cmd.SetComputeIntParam(shadowSystemCompute, spotLightShadowedCount_Property, LightSystemManager.Instance.spotLightShadowedCount);
-            cmd.SetComputeIntParam(shadowSystemCompute, shadowMapResolutionX_Property, inst.shadowMapResolution.x);
-            cmd.SetComputeIntParam(shadowSystemCompute, shadowMapResolutionY_Property, inst.shadowMapResolution.y);
-            // 绑定数据缓冲
-            cmd.SetComputeBufferParam(shadowSystemCompute, shadowMapKernel, shadowedPolygon_ShadowMap_Property, shadowedPolygonBuffer);
-            cmd.SetComputeBufferParam(shadowSystemCompute, shadowMapKernel, gridEdgeInfo_ShadowMap_Property, gridEdgeInfoBuffer);
-            cmd.SetComputeBufferParam(shadowSystemCompute, shadowMapKernel, gridEdgePool_ShadowMap_Property, gridEdgePoolBuffer);
-            cmd.SetComputeBufferParam(shadowSystemCompute, shadowMapKernel, spotLight2D_ShadowMap_Buffer_Property, inst.spotLight_ShadowMap_Buffer);
-            // debug
-            cmd.SetComputeTextureParam(shadowSystemCompute, shadowMapKernel, debug_Canvas_Property, debugCanvasBuffer);
-            // 调用
-            cmd.DispatchCompute(shadowSystemCompute, shadowMapKernel, inst.shadowMapPixelNumber / 256 + 1, 1, 1);
+            cmd.SetComputeIntParam(shadowSystemCompute, spotShadowMapResolutionX_Property, inst.spotShadowMapResolution.x);
+            cmd.SetComputeIntParam(shadowSystemCompute, spotShadowMapResolutionY_Property, inst.spotShadowMapResolution.y);
             
-            cmd.EndSample("Grid-Edge Count Sample");
+            // 绑定数据缓冲
+            cmd.SetComputeBufferParam(shadowSystemCompute, spotShadowMapKernel, shadowedPolygon_ShadowMap_Property, shadowedPolygonBuffer);
+            cmd.SetComputeBufferParam(shadowSystemCompute, spotShadowMapKernel, gridEdgeInfo_ShadowMap_Property, gridEdgeInfoBuffer);
+            cmd.SetComputeBufferParam(shadowSystemCompute, spotShadowMapKernel, gridEdgePool_ShadowMap_Property, gridEdgePoolBuffer);
+            cmd.SetComputeBufferParam(shadowSystemCompute, spotShadowMapKernel, spotLight2D_ShadowMap_Buffer_Property, inst.spotLight_ShadowMap_Buffer);
+            
+            // 绑定加速结构
+            cmd.SetComputeIntParam(shadowSystemCompute, gridEdgeFlagMipCount_Property, gridEdgeMipmapBuffer.mipmapCount);
+            cmd.SetComputeTextureParam(shadowSystemCompute, spotShadowMapKernel, gridEdgeFlag_ShadowMap_Property, gridEdgeMipmapBuffer);
+            
+            // debug
+            cmd.SetComputeTextureParam(shadowSystemCompute, spotShadowMapKernel, debug_Canvas_Property, debugCanvasBuffer);
+            cmd.SetComputeBufferParam(shadowSystemCompute, spotShadowMapKernel, debug_Count_spot_Property, debugCountBufferSpotLight);
+            
+                
+            
+            // 调用
+            cmd.DispatchCompute(shadowSystemCompute, spotShadowMapKernel, (LightSystemManager.Instance.spotLightShadowedCount * inst.spotShadowMapHorizonalRes) / 64 + 1, 1, 1);
+            
+            // 绑定参数
+            cmd.SetComputeIntParam(shadowSystemCompute, parallelLightShadowedCount_Property, LightSystemManager.Instance.parallelLightCount);
+            cmd.SetComputeIntParam(shadowSystemCompute, parallelShadowMapResolutionX_Property, inst.parallelShadowMapResolution.x);
+            cmd.SetComputeIntParam(shadowSystemCompute, parallelShadowMapResolutionY_Property, inst.parallelShadowMapResolution.y);
+            // 绑定数据缓冲
+            cmd.SetComputeBufferParam(shadowSystemCompute, parallelShadowMapKernel, shadowedPolygon_ShadowMap_Property, shadowedPolygonBuffer);
+            cmd.SetComputeBufferParam(shadowSystemCompute, parallelShadowMapKernel, gridEdgeInfo_ShadowMap_Property, gridEdgeInfoBuffer);
+            cmd.SetComputeBufferParam(shadowSystemCompute, parallelShadowMapKernel, gridEdgePool_ShadowMap_Property, gridEdgePoolBuffer);
+            cmd.SetComputeBufferParam(shadowSystemCompute, parallelShadowMapKernel, parallelLight2D_ShadowMap_Buffer_Property, inst.parallelLight_ShadowMap_Buffer);
+            
+            // 绑定加速结构
+            cmd.SetComputeIntParam(shadowSystemCompute, gridEdgeFlagMipCount_Property, gridEdgeMipmapBuffer.mipmapCount);
+            //Debug.Log("四叉树层数：" + gridEdgeMipmapBuffer.mipmapCount);
+            cmd.SetComputeTextureParam(shadowSystemCompute, parallelShadowMapKernel, gridEdgeFlag_ShadowMap_Property, gridEdgeMipmapBuffer);
+            
+            // debug
+            cmd.SetComputeTextureParam(shadowSystemCompute, parallelShadowMapKernel, debug_Canvas_Property, debugCanvasBuffer);
+            cmd.SetComputeBufferParam(shadowSystemCompute, parallelShadowMapKernel, debug_Count_parallel_Property, debugCountBufferParallelLight);
+            
+            // 调用
+            cmd.DispatchCompute(shadowSystemCompute, parallelShadowMapKernel, (LightSystemManager.Instance.parallelLightCount * inst.parallelShadowMapHorizonalRes) / 32 + 1, 1, 1);
+            
+            cmd.EndSample("ShadowMap");
+            
+            
+            // 末尾强行将计算过程同步。
+            /*GraphicsFence fence = cmd.CreateGraphicsFence(GraphicsFenceType.AsyncQueueSynchronisation, SynchronisationStageFlags.ComputeProcessing);
+            cmd.WaitOnAsyncGraphicsFence(fence);*/
+            
+            //cmd.EndSample("Grid-Edge Count Sample");
             context.ExecuteCommandBuffer(cmd);
             CommandBufferPool.Release(cmd);
         }
@@ -421,9 +554,12 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
             Shader.SetGlobalBuffer(gridEdgeInfoProperty, gridEdgeInfoBuffer);
             Shader.SetGlobalBuffer(gridEdgePoolProperty, gridEdgePoolBuffer);
             Shader.SetGlobalBuffer(spotLightShadowMapProperty, ShadowCasterManager.Instance.spotLight_ShadowMap_Buffer);
+            Shader.SetGlobalBuffer(parallelLightShadowMapProperty, ShadowCasterManager.Instance.parallelLight_ShadowMap_Buffer);
+            
             Shader.SetGlobalTexture(debug_CanvasProperty, debugCanvasBuffer);
             
-            Shader.SetGlobalInt("shadowMapResolution_X", ShadowCasterManager.Instance.shadowMapResolution.x);
+            Shader.SetGlobalInt("spotLight_ShadowMapResolution_X", ShadowCasterManager.Instance.spotShadowMapResolution.x);
+            Shader.SetGlobalInt("parallelLight_ShadowMapResolution_X", ShadowCasterManager.Instance.parallelShadowMapResolution.x);
         }
     }
 
@@ -450,6 +586,7 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
         blockSumBuffer?.Release();
         gridEdgeInfoBuffer?.Release();
         gridEdgePoolBuffer?.Release();
+        // gridEdgeMipmapBuffer?.Release();
         // debugCanvasBuffer?.Release();
     }
 
@@ -477,8 +614,11 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
             gridEdgePoolBuffer?.Release();
             gridEdgePoolBuffer = null;
             
-            /*debugCanvasBuffer?.Release();
-            debugCanvasBuffer = null;*/
+            // gridEdgeMipmapBuffer?.Release();
+            // gridEdgeMipmapBuffer = null;
+            // 
+            // debugCanvasBuffer?.Release();
+            // debugCanvasBuffer = null;
             
             return; // 直接返回，不将 Pass 添加到渲染队列
         }
@@ -524,7 +664,7 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
                 if (currLayerSize == 0)
                     currLayerSize = 1;
             }
-            Debug.Log("Block sum buffer: " + bufferSize);
+            // Debug.Log("Block sum buffer: " + bufferSize);
             // 用新的正确尺寸创建 Buffer
             blockSumBuffer = new ComputeBuffer((int)bufferSize, sizeof(int));
         }
@@ -539,6 +679,20 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
             gridEdgePoolBuffer?.Release();
             gridEdgePoolBuffer = new ComputeBuffer(inst.GRID_INFO_BUFFER_SIZE, sizeof(int));
         }
+
+        if (gridEdgeMipmapBuffer == null || gridEdgeMipmapBuffer.texelSize !=
+            new Vector2(inst.gridHorizonalNumber, inst.gridVerticalNumber))
+        {
+            // gridEdgeMipmapBuffer?.Release();
+            RenderTextureDescriptor desc = new RenderTextureDescriptor(inst.gridHorizonalNumber, inst.gridVerticalNumber, GraphicsFormat.R32_SFloat, 0, 0);
+            desc.useMipMap = true;
+            desc.autoGenerateMips = false;
+            desc.enableRandomWrite = true;
+            desc.dimension = TextureDimension.Tex2D;
+
+            gridEdgeMipmapBuffer = new RenderTexture(desc);
+            gridEdgeMipmapBuffer.Create();
+        }
         
         
         if (debugCanvasBuffer == null )
@@ -552,6 +706,17 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
             debugCanvasBuffer.Create();
         }
         
+        if (debugCountBufferSpotLight == null || !debugCountBufferSpotLight.IsValid() || debugCountBufferSpotLight.count != 128)
+        {
+            debugCountBufferSpotLight?.Release();
+            debugCountBufferSpotLight = new ComputeBuffer(128, Marshal.SizeOf<int>());
+        }
+        if (debugCountBufferParallelLight == null || !debugCountBufferParallelLight.IsValid() || debugCountBufferParallelLight.count != 4)
+        {
+            debugCountBufferParallelLight?.Release();
+            debugCountBufferParallelLight = new ComputeBuffer(4, Marshal.SizeOf<int>());
+        }
+        
         
         
         
@@ -561,7 +726,13 @@ public class ShadowSystemRenderFeature : ScriptableRendererFeature
         m_ScriptablePass.blockSumBuffer = blockSumBuffer;
         m_ScriptablePass.gridEdgeInfoBuffer = gridEdgeInfoBuffer;
         m_ScriptablePass.gridEdgePoolBuffer = gridEdgePoolBuffer;
+        
+        m_ScriptablePass.gridEdgeMipmapBuffer = gridEdgeMipmapBuffer;
+        
         m_ScriptablePass.debugCanvasBuffer = debugCanvasBuffer;
+        
+        m_ScriptablePass.debugCountBufferSpotLight = debugCountBufferSpotLight;
+        m_ScriptablePass.debugCountBufferParallelLight = debugCountBufferParallelLight;
         
         renderer.EnqueuePass(m_ScriptablePass);
     }

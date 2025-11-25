@@ -5085,6 +5085,54 @@ PrefabInstance:
       propertyPath: m_Color.r
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6731887414371142123, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: scID
+      value: 26
+      objectReference: {fileID: 0}
+    - target: {fileID: 6731887414371142123, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: outline.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6731887414371142123, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: outline.Array.data[0].w
+      value: 0.49999994
+      objectReference: {fileID: 0}
+    - target: {fileID: 6731887414371142123, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: outline.Array.data[0].z
+      value: -0.7890126
+      objectReference: {fileID: 0}
+    - target: {fileID: 6731887414371142123, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: outline.Array.data[1].w
+      value: 0.00000009425109
+      objectReference: {fileID: 0}
+    - target: {fileID: 6731887414371142123, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: outline.Array.data[1].x
+      value: -0.78901255
+      objectReference: {fileID: 0}
+    - target: {fileID: 6731887414371142123, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: outline.Array.data[1].y
+      value: -0.50000006
+      objectReference: {fileID: 0}
+    - target: {fileID: 6731887414371142123, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: outline.Array.data[1].z
+      value: 1.5812709
+      objectReference: {fileID: 0}
+    - target: {fileID: 6731887414371142123, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: outline.Array.data[2].w
+      value: -0.50000006
+      objectReference: {fileID: 0}
+    - target: {fileID: 6731887414371142123, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: outline.Array.data[2].x
+      value: -0.7890126
+      objectReference: {fileID: 0}
+    - target: {fileID: 6731887414371142123, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: outline.Array.data[2].y
+      value: 0.49999994
+      objectReference: {fileID: 0}
+    - target: {fileID: 6731887414371142123, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
+      propertyPath: outline.Array.data[2].z
+      value: -0.78901255
+      objectReference: {fileID: 0}
     - target: {fileID: 7644870089936524281, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.293
@@ -5116,45 +5164,7 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4984204296922973415, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3905397144771315387}
-    - targetCorrespondingSourceObject: {fileID: 259167649483481451, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7907112064384106641}
   m_SourcePrefab: {fileID: 100100000, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
---- !u!1 &121418387829654172 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 259167649483481451, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}
-  m_PrefabInstance: {fileID: 159845882806002679}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &7907112064384106641
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 121418387829654172}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7db70e0ea77f5ac47a8f4565a9406397, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_ShadowGroup: 0
-  m_ComponentVersion: 1
-  m_HasRenderer: 1
-  m_UseRendererSilhouette: 1
-  m_CastsShadows: 1
-  m_SelfShadows: 0
-  m_ApplyToSortingLayers: 00000000
-  m_ShapePath:
-  - {x: -0.5622584, y: -0.29746422, z: 0}
-  - {x: -0.022054227, y: 0.5719059, z: 0}
-  - {x: 0.017847506, y: 0.57444245, z: 0}
-  - {x: 0.5500758, y: -0.30127853, z: 0}
-  m_ShapePathHash: -178804119
-  m_Mesh: {fileID: 0}
-  m_InstanceId: 50110
-  m_LocalBounds:
-    m_Center: {x: -0.0060912967, y: 0.13658196, z: 0}
-    m_Extent: {x: 0.5561671, y: 0.4378605, z: 0}
 --- !u!4 &1074348396741484992 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 927522546473796151, guid: 8a29184bdb604e64e9e8c3967007cf19, type: 3}

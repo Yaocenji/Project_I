@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3672553003275316188}
   - component: {fileID: 6712319792098207423}
+  - component: {fileID: 6731887414371142123}
   m_Layer: 0
   m_Name: Triangle
   m_TagString: Untagged
@@ -52,7 +53,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 2100000, guid: 6c93a48da82eead47a74f2375e9d3838, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -84,6 +85,24 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &6731887414371142123
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 259167649483481451}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06e2dc85e8c7ba445b9c457d75bc78c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawOutline: 0
+  outline:
+  - {x: 1.5812709, y: 0.00000009425109, z: -0.7890126, w: 0.49999994}
+  - {x: -0.78901255, y: -0.50000006, z: 1.5812709, w: 0.00000009425109}
+  - {x: -0.7890126, y: 0.49999994, z: -0.78901255, w: -0.50000006}
+  scID: 40
 --- !u!1 &1446422859255064483
 GameObject:
   m_ObjectHideFlags: 0
@@ -228,6 +247,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0677cbf2276c6b4ba6b95632f2d1559, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Invincible: 0
   hp: 20
 --- !u!114 &6649136540886128981
 MonoBehaviour:

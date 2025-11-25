@@ -114,7 +114,7 @@ namespace Project_I.Bot
                 // 如果可以打断
                 if (actingNode.CanBeInterrupted)
                 {
-                    Debug.Log("申请成功：打断了当前正在运行的节点");
+                    //Debug.Log("申请成功：打断了当前正在运行的节点");
                     actingNode.Interrupt();
                     actingNode = acNode;
                     return true;
@@ -122,7 +122,7 @@ namespace Project_I.Bot
                 // 若不可打断
                 else
                 {
-                    Debug.Log("申请失败：当前正在运行的节点无法被打断");
+                    //Debug.Log("申请失败：当前正在运行的节点无法被打断");
                     return false;
                 }
             }

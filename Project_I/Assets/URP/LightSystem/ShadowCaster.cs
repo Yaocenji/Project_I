@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Sirenix.OdinInspector;
+using Unity.Mathematics;
 using UnityEngine;
 
 #if UNITY_EDITOR
@@ -31,7 +32,7 @@ namespace Project_I.LightSystem
         [LabelText("是否显示外轮廓")] public bool drawOutline = false;
         
         [HideInInspector]
-        public Vector4[] outline;
+        public List<Vector4> outline;
         
         private bool registered = false;
 
@@ -52,6 +53,7 @@ namespace Project_I.LightSystem
         
         void OnEnable()
         {
+            outline = new List<Vector4>();
             GenerateOutline(true);
             Register();
             
@@ -81,39 +83,63 @@ namespace Project_I.LightSystem
             }
         }
 
-        private void GenerateOutline(bool useTransform)
+        public void GenerateOutline(bool useTransform)
         {
             var sprite = GetComponent<SpriteRenderer>().sprite;
-            outline = SpriteOutlineExtractor.ExtractOutline(sprite);
-            Debug.Log(gameObject.name + " 轮廓线数： " + outline.Length);
+            outline.Clear();
+            var tmpOutlineData = SpriteOutlineExtractor.ExtractOutline(sprite);
+            // Debug.Log(gameObject.name + " 轮廓线数： " + tmpOutlineData.Length);
             if (useTransform)
             {
                 // 获取二维矩阵
                 Vector4 matrix2x2 = Vector4.zero;    // 矩阵行存储
-                Vector2 right = transform.right.normalized * transform.localScale.x;
-                Vector2 up = transform.up.normalized * transform.localScale.y;
+                Vector2 right = transform.right.normalized * transform.lossyScale.x;
+                Vector2 up = transform.up.normalized * transform.lossyScale.y;
                 matrix2x2 = new Vector4(right.x, up.x, right.y, up.y);
                 // 获取平移向量
                 Vector2 posMove = transform.position;
 
-                for (int i = 0; i < outline.Length; i++)
+                for (int i = 0; i < tmpOutlineData.Length; i++)
                 {
-                    var edge = outline[i];
-                    // 将2x2矩阵左乘到每个顶点的二维列向量
-                    Vector4 newEdge = Vector4.zero;
-                    newEdge.x = matrix2x2.x * edge.x + matrix2x2.y * edge.y;
-                    newEdge.y = matrix2x2.z * edge.x + matrix2x2.w * edge.y;
-                    newEdge.z = matrix2x2.x * edge.z + matrix2x2.y * edge.w;
-                    newEdge.w = matrix2x2.z * edge.z + matrix2x2.w * edge.w;
-                    // 添加平移
-                    newEdge.x += posMove.x;
-                    newEdge.y += posMove.y;
-                    newEdge.z += posMove.x;
-                    newEdge.w += posMove.y;
-                    // 写回数据
-                    outline[i] = newEdge;
+                    var edge = tmpOutlineData[i];
+
+                    // 边的起终点
+                    Vector2 start = new Vector2(edge.x, edge.y);
+                    Vector2 end = new Vector2(edge.z, edge.w);
+                    // 边的长度
+                    float edgeLen = Vector2.Distance(start, end);
+                    // 分段的长度
+                    float splitLen = ShadowCasterManager.Instance.cellSize * 2.0f;
+                    // 分出的段数
+                    int split = (int)Mathf.Ceil(edgeLen / splitLen);
+                    // 步数
+                    Vector2 step = (end - start).normalized * splitLen;
+
+                    for (int j = 0; j < split; j++)
+                    {
+                        Vector2 splitStart = start + j * step;
+                        Vector2 splitEnd = splitStart + step * 1.02f;
+                        if (j == split - 1)
+                            splitEnd = end;
+                        
+                        // 将2x2矩阵左乘到每个顶点的二维列向量
+                        Vector4 newEdge = Vector4.zero;
+                        newEdge.x = matrix2x2.x * splitStart.x + matrix2x2.y * splitStart.y;
+                        newEdge.y = matrix2x2.z * splitStart.x + matrix2x2.w * splitStart.y;
+                        newEdge.z = matrix2x2.x * splitEnd.x + matrix2x2.y * splitEnd.y;
+                        newEdge.w = matrix2x2.z * splitEnd.x + matrix2x2.w * splitEnd.y;
+                        // 添加平移
+                        newEdge.x += posMove.x;
+                        newEdge.y += posMove.y;
+                        newEdge.z += posMove.x;
+                        newEdge.w += posMove.y;
+                        // 写回数据
+                        outline.Add(newEdge);
+                    }
+                    
                 }
             }
+            // Debug.Log(gameObject.name + " 分段后的轮廓线数： " + outline.Count);
         }
 
         private void SetId2Mpb()
@@ -122,7 +148,7 @@ namespace Project_I.LightSystem
             spriteRenderer.GetPropertyBlock(GetMpb);
             
             // 用SetInt传进去会被重新按值转换，所以强转成float传进去
-            GetMpb.SetInt("objId", (int)scID);
+            GetMpb.SetInt("shadowPolygonID", (int)scID);
             
             // Debug.Log("bitFloatID: " + bitFloatID + "\nobjId: " + scID);
             
@@ -132,7 +158,7 @@ namespace Project_I.LightSystem
         // Update is called once per frame
         void Update()
         {
-            GenerateOutline(true);
+            // GenerateOutline(true);
         }
 
         #if UNITY_EDITOR

@@ -3,6 +3,27 @@
 #define MY_PI 3.14159265358979323846
 #define MY_TWO_PI 6.28318530717958647693
 
+
+// 在 CBUFFER 中声明的 宏
+#define LIGHT_SYSTEM_CONSTANT \
+        int _SpotLightShadowedCount;    \
+        int _SpotLightNoShadowedCount;  \   /**/
+        float4 _GlobalLight;            \
+        float cellSize;                 \
+        int gridHorizonalNumber;        \
+        int gridVerticalNumber;         \
+        float2 gridZero;                \
+        int spotLight_ShadowMapResolution_X;      \
+        float4 debug_Canvas_ST;         \
+        int _ParallelLightCount;        \
+        int parallelLight_ShadowMapResolution_X;    \
+
+
+/* ----------------------------------------------------- */
+/*
+ * 点光系列
+ */
+
 // 2D点光源数据
 struct SpotLight2DData
 {
@@ -23,7 +44,7 @@ StructuredBuffer<SpotLight2DData> SpotLight2D_Shadowed_Data_Buffer;
 // 无阴影点光源系列
 StructuredBuffer<SpotLight2DData> SpotLight2D_NoShadowed_Data_Buffer;
 
-// 获取光源各项数据
+// 获取点光源各项数据
 float2 GetSpotLightPosition(inout SpotLight2DData light_data)
 {
     return light_data.position_intensity_falloff.xy;
@@ -139,3 +160,22 @@ uint GetSpotLightDistanceWorld2SpotLight01(inout SpotLight2DData light_data, flo
     // 将01最大距离乘上uint最大值，就是定点表示的01最大值了
     return int(dist01 * 0xFFFFFFFF);
 }
+
+
+
+/* ----------------------------------------------------- */
+/*
+ * 平行光系列
+ */
+struct ParallelLight2DData
+{
+    // 起始轴区间
+    float4 SlideInterval;
+    float4 ColorAndIntensity;
+    float4 Direction;
+};
+// 平行光
+StructuredBuffer <ParallelLight2DData> ParallelLight_Data_Buffer;
+// 平行光阴影
+StructuredBuffer <ShadowMapInfo> ParallelLight_ShadowMap_Buffer;
+

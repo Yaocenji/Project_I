@@ -21,6 +21,8 @@ namespace Project_I.LightSystem
 
         [LabelText("点光源最大数量限制")]
         public const int MAX_SPOTLIGHT_COUNT = 128;
+        [LabelText("全局光最大数量限制")]
+        public const int MAX_PARALLELLIGHT_COUNT = 4;
 
         
         // 有阴影点光源链表
@@ -33,24 +35,28 @@ namespace Project_I.LightSystem
 
         // 有阴影点光源Compute Buffer
         private ComputeBuffer spotLights_Shadowed_Data_Buffer;
-        // 显存id
-        // private int spotLights_Shadowed_Data_Buffer_IDX;
         
         // 无阴影点光源Compute Buffer
         private ComputeBuffer spotLights_NoShadowed_Data_Buffer;
-        // 显存id
-        // private int spotLights_NoShadowed_Data_Buffer_IDX;
         
-        // 阴影caster网格列表
-        private Dictionary<ShadowCaster, ShadowCasterData> shadowCasterData;
-
+        // 全局光
+        private GlobalLight2D globalLight;
+        
+        // 平行光/日光
+        private LinkedList<ParallelLight2D> parallelLights;
+        public int parallelLightCount =>  parallelLights.Count;
+        
+        // 无阴影点光源Compute Buffer
+        private ComputeBuffer parallelLights_Data_Buffer;
+        
         
         // init
         private bool initialized = false;
 
         #if UNITY_EDITOR
+        [HideInInspector]
         [LabelText("是否自动刷新光照渲染缓存")]
-        public bool autoUpdate = false;
+        public bool autoUpdate = true;
         [Button("刷新光照渲染缓存")]
         private void ManualUpdateComputeBuffer()
         {
@@ -92,7 +98,9 @@ namespace Project_I.LightSystem
             spotLights_Shadowed_Data_Buffer = new ComputeBuffer(MAX_SPOTLIGHT_COUNT, Marshal.SizeOf(new SpotLight2DData()), ComputeBufferType.Structured);
             spotLights_NoShadowed_Data_Buffer = new ComputeBuffer(MAX_SPOTLIGHT_COUNT, Marshal.SizeOf(new SpotLight2DData()), ComputeBufferType.Structured);
             
-            shadowCasterData = new Dictionary<ShadowCaster, ShadowCasterData>();
+            parallelLights =  new LinkedList<ParallelLight2D>();
+            
+            parallelLights_Data_Buffer = new ComputeBuffer(MAX_PARALLELLIGHT_COUNT, Marshal.SizeOf(new ParallelLight2DData()));
             
             
             initialized = true;
@@ -116,8 +124,13 @@ namespace Project_I.LightSystem
             
             spotLights_Shadowed_Data_Buffer = null;
             spotLights_NoShadowed_Data_Buffer = null;
-
-            shadowCasterData = null;
+            
+            parallelLights_Data_Buffer.Dispose();
+            parallelLights_Data_Buffer = null;
+            
+            if (parallelLights != null)
+                parallelLights.Clear();
+            parallelLights = null;
             
             GC.Collect();
             
@@ -158,18 +171,45 @@ namespace Project_I.LightSystem
             }
         }
 
-
-        public void RegisterShadowCasterPolygon(ShadowCaster shadowCaster)
+        public void RegisterGlobalLight(GlobalLight2D gl)
         {
-            if (shadowCasterData.ContainsKey(shadowCaster))
+            if (!initialized)
+                return;
+            if (globalLight == null)
+                globalLight = gl;
+            else
+                Debug.Log("全局光注册 冲突取消。");
+        }
+
+        public void UnregisterGlobalLight(GlobalLight2D gl)
+        {
+            if (!initialized)
+                return;
+            if (globalLight == gl || globalLight == null)
+                globalLight = null;
+            else
+                Debug.Log("全局光注销 冲突取消。");
+        }
+
+        public void RegisterParallelLight(ParallelLight2D parallelLight)
+        {
+            if (!initialized)
+                return;
+            if (!parallelLights.Contains(parallelLight))
             {
-                
+                if (parallelLights.Count < MAX_PARALLELLIGHT_COUNT)
+                    parallelLights.AddLast(parallelLight);
+                else
+                    Debug.Log("平行光添加失败：超出数量限制");
             }
         }
-        
-        public void UnregisterShadowCasterPolygon(ShadowCaster shadowCaster)
+
+        public void UnregisterParallelLight(ParallelLight2D parallelLight)
         {
-            
+            if  (!initialized)
+                return;
+            if (parallelLights.Contains(parallelLight))
+                parallelLights.Remove(parallelLight);
         }
         
         // 刷新着色器缓存
@@ -192,16 +232,37 @@ namespace Project_I.LightSystem
                 spotLights_NoShadowed_Data[tmpIdx] = spotLight2D.GetStructedData();
                 tmpIdx++;
             }
-            
             // 传入compute buffer
             spotLights_Shadowed_Data_Buffer.SetData(spotLights_Shadowed_Data);
             spotLights_NoShadowed_Data_Buffer.SetData(spotLights_NoShadowed_Data);
+            
+            
+            
+            ParallelLight2DData[] parallelLights_Data = new ParallelLight2DData[MAX_PARALLELLIGHT_COUNT];
+            tmpIdx = 0;
+            foreach (var parallelLight2D in parallelLights)
+            {
+                parallelLights_Data[tmpIdx] = parallelLight2D.GetStructedData();
+                tmpIdx++;
+            }
+            parallelLights_Data_Buffer.SetData(parallelLights_Data);
+            
             
             Shader.SetGlobalBuffer("SpotLight2D_Shadowed_Data_Buffer", spotLights_Shadowed_Data_Buffer);
             Shader.SetGlobalBuffer("SpotLight2D_NoShadowed_Data_Buffer", spotLights_NoShadowed_Data_Buffer);
             Shader.SetGlobalInt("_SpotLightShadowedCount", spotLightsShadowed.Count);
             Shader.SetGlobalInt("_SpotLightNoShadowedCount", spotLightsNoShadowed.Count);
             
+            Shader.SetGlobalBuffer("ParallelLight_Data_Buffer", parallelLights_Data_Buffer);
+            Shader.SetGlobalInt("_ParallelLightCount", parallelLights.Count);
+            
+            GlobalLight2DData globalLightData;
+            if (globalLight != null)
+                globalLightData = globalLight.GetStructedData();
+            else
+                globalLightData.ColorAndIntensity = Vector4.zero;
+            
+            Shader.SetGlobalVector("_GlobalLight", globalLightData.ColorAndIntensity);
             
             // Debug
             if (useDebugData)

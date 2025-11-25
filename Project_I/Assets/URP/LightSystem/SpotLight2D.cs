@@ -4,6 +4,10 @@ using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 namespace Project_I.LightSystem
 {
     public struct SpotLight2DData
@@ -140,5 +144,42 @@ namespace Project_I.LightSystem
         void Update()
         {
         }
+        
+        
+        #if UNITY_EDITOR
+        private void OnDrawGizmos()
+        {
+            // 设置颜色
+            Handles.color = color;
+            Gizmos.color = color;
+
+            // 获取中心位置
+            Vector3 position = transform.position;
+
+            // 计算扇形的起始角度。我们的朝向是扇形的中心线，所以需要各减去一半的扇形角度。
+            float startAngle = Direction - OuterAngle;
+        
+            // 将角度转换为起始方向向量。在2D中，我们通常绕Z轴旋转。
+            // Vector3.up or Vector3.right 都可以作为初始方向，这里使用 Vector3.right。
+            Vector3 fromDirection = Quaternion.Euler(0, 0, startAngle) * Vector3.right;
+
+            // 对于2D视图，法线方向应指向Z轴
+            Vector3 normal = Vector3.forward;
+
+            // 绘制线框扇形
+
+            // 1. 绘制弧形
+            Handles.DrawWireArc(position, normal, fromDirection, OuterAngle * 2, OuterRadius);
+
+            // 2. 绘制两条从圆心出发的边
+            Vector3 startEdge = fromDirection * OuterRadius;
+            // 通过将起始方向向量旋转扇形角度，得到结束方向向量
+            Vector3 endEdge = (Quaternion.Euler(0, 0, OuterAngle * 2) * fromDirection) * OuterRadius;
+
+            Gizmos.DrawLine(position, position + startEdge);
+            Gizmos.DrawLine(position, position + endEdge);
+            
+        }
+        #endif
     }
 }

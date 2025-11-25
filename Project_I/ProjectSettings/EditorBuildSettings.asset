@@ -8,7 +8,10 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/SceneAVG0.unity
     guid: 5c70ce1cec86b634f9cb4c97b61ff00f
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Scene0.unity
     guid: 8c9cfa26abfee488c85f1582747f6a02
+  - enabled: 1
+    path: Assets/Scenes/SceneTestLightSystemPerform.unity
+    guid: 88c4e63e0015207489e6f071e1770546
   m_configObjects: {}

@@ -3,9 +3,11 @@ Shader "Test/TestUrp2D"
     Properties
     {
         [MainTexture] _MainTex ("MainTexture", 2D) = "white" {}
-        [MainColor]_MainColor ("Main Color", Color) = (1,1,1,1)
         _Metallic ("Metallic", Range(0, 1)) = 0
         _Smoothness ("Smoothness", Range(0, 1)) = 0.5
+        
+        
+        [HideInInspector] _Color("Tint", Color) = (1,1,1,1)
         
         //[ToggleOff] _Enable_ShadowCast("_Enable_ShadowCast", Int) = 1
 
@@ -103,7 +105,7 @@ Shader "Test/TestUrp2D"
 
             ////Transparent
             //ZWrite Off
-            //Blend SrcAlpha OneMinusSrcAlpha // 传统透明度
+            Blend SrcAlpha OneMinusSrcAlpha // 传统透明度
             //Blend One OneMinusSrcAlpha // 预乘透明度
             //Blend OneMinusDstColor One // 软加法
             //Blend DstColor Zero // 正片叠底（相乘）
@@ -135,28 +137,19 @@ Shader "Test/TestUrp2D"
             //尽量对齐到float4,否则unity底层会自己填padding来对齐,会有空间浪费
             //Align to float4 as much as possible, otherwise the underlying Unity will fill in padding to align, which will waste space
             CBUFFER_START(UnityPerMaterial)
-            int _SpotLightShadowedCount;
-            int _SpotLightNoShadowedCount;
-            
-            half4 _MainColor;
             float _Metallic;
             float _Smoothness;
             float4 _MainTex_ST;
 
-            float cellSize;
-            int gridHorizonalNumber;
-            int gridVerticalNumber;
-            float2 gridZero;
-
+            LIGHT_SYSTEM_CONSTANT
             
-            int shadowMapResolution_X;
-            
-            float4 debug_Canvas_ST;
             CBUFFER_END
 
             CBUFFER_START(UnityPerObject)
-            uint objId;
+            uint shadowPolygonID; // 每个投影网格的的ID，
             CBUFFER_END
+            
+            float4 _Color;
 
             StructuredBuffer<uint> gridCounter;
             StructuredBuffer<uint> blockCounter;
@@ -189,6 +182,7 @@ Shader "Test/TestUrp2D"
             struct Attributes
             {
                 float4 positionOS : POSITION;
+                float4 color: COLOR;
                 float3 normalOS : NORMAL;
                 float2 uv : TEXCOORD0;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
@@ -197,11 +191,12 @@ Shader "Test/TestUrp2D"
             struct Varings
             {
                 float4 positionCS : SV_POSITION;
+                float4 color: COLOR;
                 float2 uv : TEXCOORD0;
                 float3 positionWS : TEXCOORD1;
                 float3 normalWS : TEXCOORD2;
                 float3 viewDirWS : TEXCOORD3;
-                uint objectID : TEXCOORD4;
+                uint shadowPolygonID : TEXCOORD4;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -223,7 +218,8 @@ Shader "Test/TestUrp2D"
                 OUT.viewDirWS = GetCameraPositionWS() - positionInputs.positionWS;
                 OUT.normalWS = normalInputs.normalWS;
                 OUT.uv = TRANSFORM_TEX(IN.uv, _MainTex);
-                OUT.objectID = objId;
+                OUT.color = IN.color;
+                OUT.shadowPolygonID = shadowPolygonID;
                 return OUT;
             }
 
@@ -237,6 +233,8 @@ Shader "Test/TestUrp2D"
                 half4 texColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, IN.uv);
 
                 float3  lightColorSum = 0;
+
+                // 第一循环：依次采样 有投影的 点光源
                 UNITY_LOOP for (int i = 0; i < _SpotLightShadowedCount; ++i)
                 {
                     SpotLight2DData lightData = SpotLight2D_Shadowed_Data_Buffer[i];
@@ -271,30 +269,84 @@ Shader "Test/TestUrp2D"
                     {
                         float dist = length(light_2_Frag);
 
-                        float samplePosX = (radi - directionRange.x) / (radians(lightData.inoutRadius_inoutAngles.w) * 2) * shadowMapResolution_X;
+                        float samplePosX = (radi - directionRange.x) / (radians(lightData.inoutRadius_inoutAngles.w) * 2) * spotLight_ShadowMapResolution_X;
 
                         float samplePosX_deci = frac(samplePosX);
                         
                         int shadowIdx_Left = int(samplePosX);
                         int shadowIdx_Right = ceil(samplePosX);
                         
-                        uint shadowIdxFlatten_Left = i * shadowMapResolution_X + shadowIdx_Left;
-                        uint shadowIdxFlatten_Right = i * shadowMapResolution_X + shadowIdx_Right;
+                        uint shadowIdxFlatten_Left = i * spotLight_ShadowMapResolution_X + shadowIdx_Left;
+                        uint shadowIdxFlatten_Right = i * spotLight_ShadowMapResolution_X + shadowIdx_Right;
 
                         
                         float sampledDepth = SpotLight2D_ShadowMap_Buffer[shadowIdxFlatten_Left].Depth * (1 - samplePosX_deci)
                                             + SpotLight2D_ShadowMap_Buffer[shadowIdxFlatten_Right].Depth * samplePosX_deci;
-
-                        /*float debugID = SpotLight2D_ShadowMap_Buffer[shadowIdxFlatten_Left].Id * (1 - samplePosX_deci)
-                                            + SpotLight2D_ShadowMap_Buffer[shadowIdxFlatten_Right].Id * samplePosX_deci;*/
                         
                         float curr01DepthFloat = clamp(dist / lightData.inoutRadius_inoutAngles.y, 0, 1);
+
                         shadow = sampledDepth < curr01DepthFloat ? 0.01 : 1;
+
+                        /*float sampledDepthsSum = 0;
+                        float minDepth = 2.0f;
+                        for (int j = -5; j < 5; ++j)
+                        {
+                            float currSamplePosX = samplePosX + (float)j;
+                            if (currSamplePosX < 0) currSamplePosX += spotLight_ShadowMapResolution_X;
+                            if (currSamplePosX > spotLight_ShadowMapResolution_X) currSamplePosX -= spotLight_ShadowMapResolution_X;
+                            
+                            int currShadowIdx_Left = int(currSamplePosX);
+                            int currShadowIdx_Right = ceil(currSamplePosX);
+
+                            uint currShadowIdxFlatten_Left = i * spotLight_ShadowMapResolution_X + currShadowIdx_Left;
+                            uint currShadowIdxFlatten_Right = i * spotLight_ShadowMapResolution_X + currShadowIdx_Right;
+
+                            float currSampledDepth = SpotLight2D_ShadowMap_Buffer[currShadowIdxFlatten_Left].Depth * (1 - samplePosX_deci)
+                                            + SpotLight2D_ShadowMap_Buffer[currShadowIdxFlatten_Right].Depth * samplePosX_deci;
+
+                            if (currSampledDepth < minDepth)
+                            {
+                                minDepth = currSampledDepth;
+                            }
+                        }
+                        float d = minDepth < curr01DepthFloat ? abs(minDepth - curr01DepthFloat) * lightData.inoutRadius_inoutAngles.y : 0;
+                        
+                        int ran = (1 - exp(-0.1f * d)) * 5.0f;
+                        ran += 1.0f;
+
+                        float coefSum = 0;
+                        for (int j = -ran; j <= ran; ++j)
+                        {
+                            float currSamplePosX = samplePosX + (float)j;
+                            if (currSamplePosX < 0) currSamplePosX += spotLight_ShadowMapResolution_X;
+                            if (currSamplePosX > spotLight_ShadowMapResolution_X) currSamplePosX -= spotLight_ShadowMapResolution_X;
+                            
+                            int currShadowIdx_Left = int(currSamplePosX);
+                            int currShadowIdx_Right = ceil(currSamplePosX);
+
+                            uint currShadowIdxFlatten_Left = i * spotLight_ShadowMapResolution_X + currShadowIdx_Left;
+                            uint currShadowIdxFlatten_Right = i * spotLight_ShadowMapResolution_X + currShadowIdx_Right;
+
+                            float currSampledDepth = SpotLight2D_ShadowMap_Buffer[currShadowIdxFlatten_Left].Depth * (1 - samplePosX_deci)
+                                            + SpotLight2D_ShadowMap_Buffer[currShadowIdxFlatten_Right].Depth * samplePosX_deci;
+
+                            // 系数
+                            float coef = exp(-.5 * ran);
+                            coefSum += coef;
+
+                            // 离得越远，阴影越浅
+                            //sampledDepthsSum += (currSampledDepth < curr01DepthFloat ? (1 - exp(-0.05 * lightData.inoutRadius_inoutAngles.y * abs(currSampledDepth - curr01DepthFloat))) : 1) * coef;
+                            sampledDepthsSum += (currSampledDepth < curr01DepthFloat ? 0.01 : 1) * coef;
+                        }
+                        float softShadow = sampledDepthsSum / coefSum;
+
+                        shadow = softShadow;*/
+                        
                         // 如果被遮挡了
                         if (sampledDepth < curr01DepthFloat)
                         {
-                            if (SpotLight2D_ShadowMap_Buffer[shadowIdxFlatten_Left].Id == IN.objectID &&
-                                SpotLight2D_ShadowMap_Buffer[shadowIdxFlatten_Right].Id == IN.objectID)
+                            if (SpotLight2D_ShadowMap_Buffer[shadowIdxFlatten_Left].Id == IN.shadowPolygonID &&
+                                SpotLight2D_ShadowMap_Buffer[shadowIdxFlatten_Right].Id == IN.shadowPolygonID)
                             {
                                 shadow = 1;
                             }
@@ -306,6 +358,8 @@ Shader "Test/TestUrp2D"
                     lightColorSum += shadow * GetSpotLightColor(lightData) * GetSpotLightIntensity(lightData) * GetSpotLightAttenuationWS(lightData, light_2_Frag);
                     
                 }
+
+                // 第二循环：依次采样 无投影的 点光源
                 UNITY_LOOP for (int i = 0; i < _SpotLightNoShadowedCount; ++i)
                 {
                     SpotLight2DData lightData = SpotLight2D_NoShadowed_Data_Buffer[i];
@@ -314,27 +368,137 @@ Shader "Test/TestUrp2D"
                     lightColorSum += GetSpotLightColor(lightData) * GetSpotLightIntensity(lightData) * GetSpotLightAttenuationWS(lightData, light_2_frag);
                 }
 
-                float3 ans = lightColorSum * texColor;
+                // 第三操作：添加全局光
+                lightColorSum += _GlobalLight.xyz * _GlobalLight.w;
+
+                // 第四循环：平行光
+                UNITY_LOOP for (int i = 0; i < _ParallelLightCount; ++i)
+                {
+                    ParallelLight2DData lightData = ParallelLight_Data_Buffer[i];
+
+                    float shadow;
+
+                    // 计算当前位置在Light的哪里
+                    // 类似施密特正交化得到t
+                    float t = dot(float2(IN.positionWS - lightData.SlideInterval.xy), float2(lightData.SlideInterval.zw - lightData.SlideInterval.xy)) /
+                        pow(length(float2(lightData.SlideInterval.zw - lightData.SlideInterval.xy)), 2);
+
+                    if (t < 0 || t > 1)
+                    {
+                        shadow = 1;
+                    }
+                    else
+                    {
+                        float2 projPoint = lerp(lightData.SlideInterval.xy, lightData.SlideInterval.zw, t);
+                        // 当前点到滑轴的距离
+                        float dist = distance(IN.positionWS, projPoint);
+
+                        float samplePosX = t * float(parallelLight_ShadowMapResolution_X);
+                        float samplePosX_deci = frac(samplePosX);
+                        int shadowIdx_Left = int(samplePosX);
+                        int shadowIdx_Right = ceil(samplePosX);
+
+                        uint shadowIdxFlatten_Left = i * parallelLight_ShadowMapResolution_X + shadowIdx_Left;
+                        uint shadowIdxFlatten_Right = i * parallelLight_ShadowMapResolution_X + shadowIdx_Right;
+
+                    
+                        float sampledDepth = ParallelLight_ShadowMap_Buffer[shadowIdxFlatten_Left].Depth * (1 - samplePosX_deci)
+                                            + ParallelLight_ShadowMap_Buffer[shadowIdxFlatten_Right].Depth * samplePosX_deci;
+                    
+                        // float curr01DepthFloat = dist;
+                        shadow = sampledDepth < dist ? 0.01 : 1;
+
+                        /*float sampledDepthsSum = 0;
+                        float minDepth = 1e30;
+                        for (int j = -5; j < 5; ++j)
+                        {
+                            float currSamplePosX = samplePosX + (float)j;
+                            if (currSamplePosX < 0) currSamplePosX += parallelLight_ShadowMapResolution_X;
+                            if (currSamplePosX > parallelLight_ShadowMapResolution_X) currSamplePosX -= parallelLight_ShadowMapResolution_X;
+                            
+                            int currShadowIdx_Left = int(currSamplePosX);
+                            int currShadowIdx_Right = ceil(currSamplePosX);
+
+                            uint currShadowIdxFlatten_Left = i * parallelLight_ShadowMapResolution_X + currShadowIdx_Left;
+                            uint currShadowIdxFlatten_Right = i * parallelLight_ShadowMapResolution_X + currShadowIdx_Right;
+
+                            float currSampledDepth = ParallelLight_ShadowMap_Buffer[currShadowIdxFlatten_Left].Depth * (1 - samplePosX_deci)
+                                            + ParallelLight_ShadowMap_Buffer[currShadowIdxFlatten_Right].Depth * samplePosX_deci;
+
+                            if (currSampledDepth < minDepth)
+                            {
+                                minDepth = currSampledDepth;
+                            }
+                        }
+                        float d = minDepth < dist ? abs(minDepth - dist) : 0;
+                        
+                        int ran = (1 - exp(-0.1f * d)) * 10.0f;
+                        //ran += 1.0f;
+
+                        float coefSum = 0;
+                        for (int j = -ran; j <= ran; ++j)
+                        {
+                            float currSamplePosX = samplePosX + (float)j;
+                            if (currSamplePosX < 0) currSamplePosX = 0;
+                            if (currSamplePosX > parallelLight_ShadowMapResolution_X) currSamplePosX = parallelLight_ShadowMapResolution_X - 1;
+                            
+                            int currShadowIdx_Left = int(currSamplePosX);
+                            int currShadowIdx_Right = ceil(currSamplePosX);
+
+                            uint currShadowIdxFlatten_Left = i * parallelLight_ShadowMapResolution_X + currShadowIdx_Left;
+                            uint currShadowIdxFlatten_Right = i * parallelLight_ShadowMapResolution_X + currShadowIdx_Right;
+
+                            float currSampledDepth = ParallelLight_ShadowMap_Buffer[currShadowIdxFlatten_Left].Depth * (1 - samplePosX_deci)
+                                            + ParallelLight_ShadowMap_Buffer[currShadowIdxFlatten_Right].Depth * samplePosX_deci;
+
+                            // 系数
+                            float coef = exp(-.5 * ran);
+                            coefSum += coef;
+                            
+                            sampledDepthsSum += (currSampledDepth < dist ? 0.01 : 1) * coef;
+                        }
+                        float softShadow = sampledDepthsSum / coefSum;
+
+                        shadow = softShadow;*/
+
+                        // 如果被遮挡了
+                        if (sampledDepth < dist)
+                        {
+                            if (ParallelLight_ShadowMap_Buffer[shadowIdxFlatten_Left].Id == IN.shadowPolygonID &&
+                                ParallelLight_ShadowMap_Buffer[shadowIdxFlatten_Right].Id == IN.shadowPolygonID)
+                            {
+                                shadow = 1;
+                            }
+                        }
+                    }
+
+                    
+                    lightColorSum += shadow * lightData.ColorAndIntensity.xyz * lightData.ColorAndIntensity.w;
+                }
+
+                float4 ans = float4(lightColorSum, 1) * texColor * IN.color * _Color;
 
                 
                 // debug
                 int2 currCell = int2((IN.positionWS - gridZero) / cellSize);
                 int idx = currCell.y * gridHorizonalNumber + currCell.x;
                 int idx1 = idx / 256.0f;
-                float cnt0 = gridCounter[idx] / 10000.0f;
-                float cnt1 = blockCounter[idx1] / 10.0f;
-                float cnt2 = gridEdgeInfo[idx].offset / 100.0f;
+                float cnt0 = gridCounter[idx] / 100000.0f;
+                float cnt1 = blockCounter[idx1] / 100000.0f;
+                float cnt2 = gridEdgeInfo[idx].offset / 1000.0f;
                 float cnt3 = gridEdgePool[idx] / 100.0f;
                 float cnt4 = SpotLight2D_ShadowMap_Buffer[idx].Depth;
-                //float3 cnt5 = [currCell].xyz;
-                float3 cnt5 = SAMPLE_TEXTURE2D(debug_Canvas, samplerdebug_Canvas, float2(currCell) / 1024.0f);
+                float3 cnt5 = SAMPLE_TEXTURE2D(debug_Canvas, samplerdebug_Canvas, float2(currCell) / float2(gridHorizonalNumber, gridVerticalNumber));
+                float cnt6 = gridEdgeInfo[idx].count / 3.0f;
                 
-                float3 tmpAns = cnt0;
-                if (currCell.x < 0 || currCell.x > gridHorizonalNumber ||
-                    currCell.y < 0 || currCell.y > gridVerticalNumber)
+                float4 tmpAns = float4(cnt5.xyz, 1);
+                if (IN.positionWS.x < gridZero.x || IN.positionWS.x > gridZero.x + gridHorizonalNumber * cellSize ||
+                    IN.positionWS.y < gridZero.y || IN.positionWS.y > gridZero.y + gridVerticalNumber * cellSize)
                     tmpAns = 0;
+
+                float4 blendans = (ans + tmpAns) * .5f;
                 
-                return float4(ans, 1);
+                return ans;
             }
             ENDHLSL
         }
